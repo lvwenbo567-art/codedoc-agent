@@ -1,6 +1,7 @@
 import argparse
 
 from file_loader import load_project_files
+from code_parser import parse_python_files
 
 
 def print_project_summary(project_path: str) -> None:
@@ -36,6 +37,36 @@ def print_project_summary(project_path: str) -> None:
         print(readme["content"][:500])
     else:
         print("未找到 README.md")
+
+    print()
+    print("Python 代码结构:")
+    python_structures = parse_python_files(files)
+
+    for item in python_structures:
+        print(f"\n文件: {item['file_path']}")
+
+        if item["error"]:
+            print(f"  解析失败: {item['error']}")
+            continue
+
+        print("  类:")
+        if item["classes"]:
+            for cls in item["classes"]:
+                print(f"  - {cls['name']}，第 {cls['lineno']} 行")
+                if cls["docstring"]:
+                    print(f"    注释: {cls['docstring']}")
+        else:
+            print("  - 无")
+
+        print("  函数:")
+        if item["functions"]:
+            for func in item["functions"]:
+                async_flag = "async " if func.get("is_async") else ""
+                print(f"  - {async_flag}{func['name']}，第 {func['lineno']} 行")
+                if func["docstring"]:
+                    print(f"    注释: {func['docstring']}")
+        else:
+            print("  - 无")
 
 
 def main() -> None:

@@ -1,9 +1,13 @@
-from utils import add
+from utils import Calculator, multiply
 
 
 def main():
-    result = add(1, 2)
+    calculator = Calculator()
+    result = calculator.add(1, 2)
     print(result)
+
+    value = multiply(3, 4)
+    print(value)
 
 
 if __name__ == "__main__":
