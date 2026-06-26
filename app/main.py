@@ -4,16 +4,26 @@ from file_loader import load_project_files
 from code_parser import parse_python_files
 from config import DEFAULT_API_KEY, DEFAULT_BASE_URL, DEFAULT_MODEL_NAME
 from llm_client import LLMClient
+from chunker import build_chunks
 
 def print_project_summary(project_path: str) -> None:
     files = load_project_files(project_path)
-
+    chunks = build_chunks(files)
     md_files = [f for f in files if f["suffix"] == ".md"]
     txt_files = [f for f in files if f["suffix"] == ".txt"]
     py_files = [f for f in files if f["suffix"] == ".py"]
 
     print(f"项目路径: {project_path}")
     print(f"共读取文件: {len(files)} 个")
+    print()
+    
+    doc_chunks = [c for c in chunks if c["chunk_type"] == "document"]
+    code_chunks = [c for c in chunks if c["chunk_type"] == "code"]
+
+    print("Chunk 统计:")
+    print(f"- 文档 chunk 数量: {len(doc_chunks)}")
+    print(f"- 代码 chunk 数量: {len(code_chunks)}")
+    print(f"- 总 chunk 数量: {len(chunks)}")
     print()
 
     print("Markdown 文件:")
