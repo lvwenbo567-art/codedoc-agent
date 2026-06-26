@@ -1,0 +1,3 @@
+DEFAULT_MODEL_NAME = "mock-model"
+DEFAULT_BASE_URL = "http://localhost:8000/v1"
+DEFAULT_API_KEY = "EMPTY"

@@ -2,7 +2,8 @@ import argparse
 
 from file_loader import load_project_files
 from code_parser import parse_python_files
-
+from config import DEFAULT_API_KEY, DEFAULT_BASE_URL, DEFAULT_MODEL_NAME
+from llm_client import LLMClient
 
 def print_project_summary(project_path: str) -> None:
     files = load_project_files(project_path)
@@ -35,8 +36,19 @@ def print_project_summary(project_path: str) -> None:
     if readme:
         print("README 前 500 字:")
         print(readme["content"][:500])
+        llm_client = LLMClient(
+        model_name=DEFAULT_MODEL_NAME,
+        base_url=DEFAULT_BASE_URL,
+        api_key=DEFAULT_API_KEY,
+    )
+        summary = llm_client.summarize_text(readme["content"])
+
+        print()
+        print("README 模拟摘要:")
+        print(summary)
     else:
         print("未找到 README.md")
+    
 
     print()
     print("Python 代码结构:")
