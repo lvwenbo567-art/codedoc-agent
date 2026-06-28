@@ -42,3 +42,34 @@ def test_build_chunks_type():
     assert len(chunks) == 2
     assert chunks[0]["chunk_type"] == "document"
     assert chunks[1]["chunk_type"] == "code"
+
+def test_build_chunks_fields():
+    files = [
+        {
+            "path": "test_project/README.md",
+            "name": "README.md",
+            "suffix": ".md",
+            "content": "hello world",
+            "length": 11,
+        }
+    ]
+
+    chunks = build_chunks(
+        files=files,
+        chunk_size=100,
+        overlap=20,
+    )
+
+    chunk = chunks[0]
+
+    assert "chunk_id" in chunk
+    assert "source_path" in chunk
+    assert "source_name" in chunk
+    assert "source_suffix" in chunk
+    assert "chunk_type" in chunk
+    assert "chunk_index" in chunk
+    assert "content" in chunk
+    assert "length" in chunk
+
+    assert chunk["source_name"] == "README.md"
+    assert chunk["chunk_type"] == "document"

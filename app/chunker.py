@@ -1,5 +1,5 @@
 from typing import Dict, List
-
+from document_schema import Chunk
 
 def chunk_text(
     text: str,
@@ -63,17 +63,16 @@ def build_chunks(
             else:
                 chunk_type = "document"
 
-            results.append(
-                {
-                    "chunk_id": f"{file['path']}::chunk_{idx}",
-                    "source_path": file["path"],
-                    "source_name": file["name"],
-                    "source_suffix": file["suffix"],
-                    "chunk_type": chunk_type,
-                    "chunk_index": idx,
-                    "content": chunk,
-                    "length": len(chunk),
-                }
-            )
-
+            chunk_obj = Chunk(
+               chunk_id=f"{file['path']}::chunk_{idx}",
+               source_path=file["path"],
+               source_name=file["name"],
+               source_suffix=file["suffix"],
+               chunk_type=chunk_type,
+               chunk_index=idx,
+               content=chunk,
+               length=len(chunk),
+           )
+            results.append(chunk_obj.to_dict())
+            
     return results
