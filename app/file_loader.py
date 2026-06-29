@@ -1,5 +1,7 @@
 from pathlib import Path
 from typing import Dict, List
+from config import SUPPORTED_SUFFIXES
+from document_schema import ProjectFile
 
 SUPPORTED_SUFFIXES={".md",".txt",".py"}
 
@@ -37,21 +39,20 @@ def load_project_files(project_path: str) -> List[Dict]:
     """
     加载项目中的 .md / .txt / .py 文件。
     """
-    file_paths = scan_project_files(project_path)
+    paths = scan_project_files(project_path)
 
     results = []
 
-    for file_path in file_paths:
-        content = read_text_file(file_path)
+    for path in paths:
+        content = read_text_file(path)
 
-        results.append(
-            {
-                "path": str(file_path),
-                "name": file_path.name,
-                "suffix": file_path.suffix.lower(),
-                "content": content,
-                "length": len(content),
-            }
+        file_obj = ProjectFile(
+            path=str(path),
+            name=path.name,
+            suffix=path.suffix.lower(),
+            content=content,
+            length=len(content),
         )
+        results.append(file_obj.to_dict())
 
     return results

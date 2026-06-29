@@ -24,3 +24,13 @@
 - 为 `code_parser.py` 增加基础测试
 - 初步理解 pytest 的作用：用自动化方式验证函数行为是否符合预期
 - 当前项目已经完成从项目文件读取到 chunk 构建的最小链路
+
+### Day 6
+
+- 新增 `document_schema.py`
+- 使用 `dataclass` 定义 `ProjectFile` 和 `Chunk` 数据结构
+- 对 chunk 数据结构进行标准化，为后续 Embedding、向量库和数据库存储做准备
+- 新增 `logger.py`
+- 使用 logging 替代部分 print，支持控制台日志和文件日志
+- 为 `chunker.py` 增加字段完整性测试
+- 当前项目进入基础工程化整理阶段

@@ -8,7 +8,11 @@ from chunker import build_chunks
 from logger import setup_logger
 
 
-def print_project_summary(project_path: str) -> None:
+def print_project_summary(
+    project_path: str,
+    chunk_size: int = 500,
+    overlap: int = 100,
+) -> None:
     logger = setup_logger()
 
     logger.info("开始读取项目文件: %s", project_path)
@@ -16,7 +20,11 @@ def print_project_summary(project_path: str) -> None:
     logger.info("项目文件读取完成，文件数量: %s", len(files))
 
     logger.info("开始构建 chunks")
-    chunks = build_chunks(files)
+    chunks = build_chunks(
+    files=files,
+    chunk_size=chunk_size,
+    overlap=overlap,
+)
     logger.info("Chunk 构建完成，chunk 数量: %s", len(chunks))
 
     md_files = [f for f in files if f["suffix"] == ".md"]
@@ -124,12 +132,17 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description="CodeDoc Research Agent 项目扫描器")
     parser.add_argument("--project_path", required=True, help="要分析的项目目录路径")
-
+    parser.add_argument("--chunk_size", type=int, default=500, help="每个 chunk 的最大字符数")
+    parser.add_argument("--overlap", type=int, default=100, help="相邻 chunk 的重叠字符数")
     args = parser.parse_args()
 
     logger.info("命令行参数解析完成，project_path=%s", args.project_path)
 
-    print_project_summary(args.project_path)
+    print_project_summary(
+    project_path=args.project_path,
+    chunk_size=args.chunk_size,
+    overlap=args.overlap,
+)
 
     logger.info("CodeDoc Research Agent 运行结束")
 
