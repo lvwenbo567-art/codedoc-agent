@@ -1,5 +1,5 @@
 from dataclasses import dataclass, asdict
-from typing import Dict,Literal
+from typing import Dict,Literal,Any
 
 @dataclass
 class ProjectFile:
@@ -15,7 +15,7 @@ class ProjectFile:
     content: str
     length: int
 
-    def to_dict(self)->Dict:
+    def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
     
 @dataclass
@@ -35,5 +35,5 @@ class Chunk:
     content: str
     length: int
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

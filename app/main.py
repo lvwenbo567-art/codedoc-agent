@@ -7,6 +7,13 @@ from llm_client import LLMClient
 from chunker import build_chunks
 from logger import setup_logger
 
+from config import (
+    DEFAULT_API_KEY,
+    DEFAULT_BASE_URL,
+    DEFAULT_CHUNK_OVERLAP,
+    DEFAULT_CHUNK_SIZE,
+    DEFAULT_MODEL_NAME,
+)
 
 def print_project_summary(
     project_path: str,
@@ -43,7 +50,21 @@ def print_project_summary(
     print(f"- 代码 chunk 数量: {len(code_chunks)}")
     print(f"- 总 chunk 数量: {len(chunks)}")
     print()
+    
 
+    print("Chunk 示例:")
+
+    if chunks:
+        for chunk in chunks[:3]:
+            print(f"- chunk_id: {chunk['chunk_id']}")
+            print(f"  source_name: {chunk['source_name']}")
+            print(f"  chunk_type: {chunk['chunk_type']}")
+            print(f"  content_preview: {chunk['content'][:100]}")
+            print()
+    else:
+        print("- 暂无 chunk")
+        print()
+          
     logger.info(
         "Chunk 统计完成，document=%s, code=%s, total=%s",
         len(doc_chunks),
@@ -132,8 +153,8 @@ def main() -> None:
 
     parser = argparse.ArgumentParser(description="CodeDoc Research Agent 项目扫描器")
     parser.add_argument("--project_path", required=True, help="要分析的项目目录路径")
-    parser.add_argument("--chunk_size", type=int, default=500, help="每个 chunk 的最大字符数")
-    parser.add_argument("--overlap", type=int, default=100, help="相邻 chunk 的重叠字符数")
+    parser.add_argument("--chunk_size", type=int, default=DEFAULT_CHUNK_SIZE, help="每个 chunk 的最大字符数")
+    parser.add_argument("--overlap", type=int, default=DEFAULT_CHUNK_OVERLAP, help="相邻 chunk 的重叠字符数")
     args = parser.parse_args()
 
     logger.info("命令行参数解析完成，project_path=%s", args.project_path)

@@ -1,17 +1,13 @@
 from typing import Dict, List
 from document_schema import Chunk
+from config import DEFAULT_CHUNK_OVERLAP,DEFAULT_CHUNK_SIZE
 
-def chunk_text(
-    text: str,
-    chunk_size: int = 500,
-    overlap: int = 100,
-) -> List[str]:
-    """
-    按固定字符长度切分文本，并保留一定重叠。
-    """
-    if not text or not text.strip():
-        return []
 
+
+def validate_chunk_params(chunk_size: int, overlap: int)->None:
+    """
+    校验 chunk 参数是否合法。
+    """
     if chunk_size <= 0:
         raise ValueError("chunk_size 必须大于 0")
 
@@ -20,6 +16,22 @@ def chunk_text(
 
     if overlap >= chunk_size:
         raise ValueError("overlap 必须小于 chunk_size")
+
+
+def chunk_text(
+    text: str,
+    chunk_size: int = DEFAULT_CHUNK_SIZE,
+    overlap: int = DEFAULT_CHUNK_OVERLAP,
+) -> List[str]:
+    """
+    按固定字符长度切分文本，并保留一定重叠。
+    """
+    validate_chunk_params(chunk_size, overlap)
+
+    if not text or not text.strip():
+        return []
+
+    
 
     chunks = []
     start = 0
@@ -39,10 +51,20 @@ def chunk_text(
     return chunks
 
 
+def get_chunk_type(suffix: str) -> str:
+    """
+    根据文件后缀判断 chunk 类型。
+    """
+    if suffix.lower() == ".py":
+        return "code"
+
+    return "document"
+
+
 def build_chunks(
     files: List[Dict],
-    chunk_size: int = 500,
-    overlap: int = 100,
+    chunk_size: int = DEFAULT_CHUNK_SIZE,
+    overlap: int = DEFAULT_CHUNK_OVERLAP,
 ) -> List[Dict]:
     """
     将项目文件切分为统一 chunk 结构。
@@ -56,12 +78,10 @@ def build_chunks(
             chunk_size=chunk_size,
             overlap=overlap,
         )
-
+        chunk_type = get_chunk_type(file["suffix"])
+        
         for idx, chunk in enumerate(text_chunks):
-            if file["suffix"] == ".py":
-                chunk_type = "code"
-            else:
-                chunk_type = "document"
+            
 
             chunk_obj = Chunk(
                chunk_id=f"{file['path']}::chunk_{idx}",
