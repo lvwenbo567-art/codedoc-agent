@@ -54,3 +54,14 @@
 - 测试正常切分、空文本、非法参数、chunk 字段完整性和 chunk 类型判断
 - 修改 `main.py`，输出前 3 个 chunk 示例
 - 当前完成了 RAG 数据准备链路中的 `file -> chunk` 阶段
+
+### Day 9
+
+- 修复 `document_schema.py` 中 `Any` 未导入的问题
+- 完成 `file_loader -> chunker -> main.py` 链路联调
+- 新增 `chunk_storage.py`
+- 支持将 chunks 保存为 JSON 文件
+- 支持从 JSON 文件读取 chunks
+- 新增 chunk 统计功能，包括总数量、代码 chunk 数量、文档 chunk 数量和平均长度
+- 新增 `tests/test_chunk_storage.py`
+- 当前 RAG 数据准备层已经支持：文件读取、chunk 构建、chunk 统计和 JSON 持久化

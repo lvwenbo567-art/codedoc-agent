@@ -6,6 +6,7 @@ from config import DEFAULT_API_KEY, DEFAULT_BASE_URL, DEFAULT_MODEL_NAME
 from llm_client import LLMClient
 from chunker import build_chunks
 from logger import setup_logger
+from chunk_storage import calculate_chunk_stats, save_chunks_to_json
 
 from config import (
     DEFAULT_API_KEY,
@@ -19,6 +20,8 @@ def print_project_summary(
     project_path: str,
     chunk_size: int = 500,
     overlap: int = 100,
+    save_chunks: bool = False,
+    output_path: str = "outputs/chunks.json",
 ) -> None:
     logger = setup_logger()
 
@@ -42,13 +45,13 @@ def print_project_summary(
     print(f"共读取文件: {len(files)} 个")
     print()
 
-    doc_chunks = [c for c in chunks if c["chunk_type"] == "document"]
-    code_chunks = [c for c in chunks if c["chunk_type"] == "code"]
+    stats = calculate_chunk_stats(chunks)
 
     print("Chunk 统计:")
-    print(f"- 文档 chunk 数量: {len(doc_chunks)}")
-    print(f"- 代码 chunk 数量: {len(code_chunks)}")
-    print(f"- 总 chunk 数量: {len(chunks)}")
+    print(f"- 文档 chunk 数量: {stats['document_count']}")
+    print(f"- 代码 chunk 数量: {stats['code_count']}")
+    print(f"- 总 chunk 数量: {stats['total']}")
+    print(f"- 平均 chunk 长度: {stats['avg_length']:.2f}")
     print()
     
 
@@ -64,12 +67,22 @@ def print_project_summary(
     else:
         print("- 暂无 chunk")
         print()
-          
+    
+    if save_chunks:
+        saved_path = save_chunks_to_json(
+        chunks=chunks,
+        output_path=output_path,
+    )
+
+    logger.info("Chunks 已保存到: %s", saved_path)
+    print(f"Chunks 已保存到: {saved_path}")
+    print()
+
     logger.info(
         "Chunk 统计完成，document=%s, code=%s, total=%s",
-        len(doc_chunks),
-        len(code_chunks),
-        len(chunks),
+        stats["document_count"],
+        stats["code_count"],
+        stats["total"],
     )
 
     print("Markdown 文件:")
@@ -155,6 +168,16 @@ def main() -> None:
     parser.add_argument("--project_path", required=True, help="要分析的项目目录路径")
     parser.add_argument("--chunk_size", type=int, default=DEFAULT_CHUNK_SIZE, help="每个 chunk 的最大字符数")
     parser.add_argument("--overlap", type=int, default=DEFAULT_CHUNK_OVERLAP, help="相邻 chunk 的重叠字符数")
+    parser.add_argument(
+    "--save_chunks",
+    action="store_true",
+    help="是否将 chunks 保存为 JSON 文件",
+)
+    parser.add_argument(
+    "--output_path",
+    default="outputs/chunks.json",
+    help="chunks JSON 输出路径",
+)
     args = parser.parse_args()
 
     logger.info("命令行参数解析完成，project_path=%s", args.project_path)
@@ -163,6 +186,8 @@ def main() -> None:
     project_path=args.project_path,
     chunk_size=args.chunk_size,
     overlap=args.overlap,
+    save_chunks=args.save_chunks,
+    output_path=args.output_path,
 )
 
     logger.info("CodeDoc Research Agent 运行结束")
