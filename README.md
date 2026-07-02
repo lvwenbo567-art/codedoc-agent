@@ -65,3 +65,15 @@
 - 新增 chunk 统计功能，包括总数量、代码 chunk 数量、文档 chunk 数量和平均长度
 - 新增 `tests/test_chunk_storage.py`
 - 当前 RAG 数据准备层已经支持：文件读取、chunk 构建、chunk 统计和 JSON 持久化
+
+### Day 10
+
+- 新增 `retriever.py`
+- 实现关键词检索版 Retriever v0
+- 新增 `extract_query_terms()`，用于从 query 中提取关键词
+- 新增 `score_chunk()`，根据 query 与 chunk 内容、文件名匹配情况计算相关性分数
+- 新增 `search_chunks()`，支持从 chunks 中返回 Top-K 相关片段
+- 新增 `tests/test_retriever.py`
+- 测试 query 解析、chunk 打分、Top-K 检索、无命中和非法 top_k
+- 修改 `main.py`，支持 `--query` 和 `--top_k`
+- 当前项目已经初步具备 RAG 检索层雏形：file -> chunk -> retrieve
