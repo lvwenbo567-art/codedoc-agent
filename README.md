@@ -77,3 +77,14 @@
 - 测试 query 解析、chunk 打分、Top-K 检索、无命中和非法 top_k
 - 修改 `main.py`，支持 `--query` 和 `--top_k`
 - 当前项目已经初步具备 RAG 检索层雏形：file -> chunk -> retrieve
+
+### Day 11
+
+- 新增 `search_service.py`
+- 实现 `build_search_results()`，将检索到的 chunks 转换为统一搜索结果结构
+- 实现 `search_chunks_from_json()`，支持直接从 `chunks.json` 中读取 chunks 并执行检索
+- 新增 `search_cli.py`
+- 支持通过命令行直接检索已有 chunks 文件
+- 新增 `tests/test_search_service.py`
+- 测试搜索结果结构化、从 JSON 检索和无命中情况
+- 当前项目已经初步拆分出离线数据准备阶段和在线检索阶段
