@@ -1,0 +1,14 @@
+[
+  {
+    "query": "main",
+    "expected_chunk_ids": [
+      "test_project\\main.py::chunk_0"
+    ]
+  },
+  {
+    "query": "Calculator",
+    "expected_chunk_ids": [
+      "test_project\\utils.py::chunk_0"
+    ]
+  }
+]

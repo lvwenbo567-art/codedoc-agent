@@ -88,3 +88,15 @@
 - 新增 `tests/test_search_service.py`
 - 测试搜索结果结构化、从 JSON 检索和无命中情况
 - 当前项目已经初步拆分出离线数据准备阶段和在线检索阶段
+
+### Day 12
+
+- 新增 `retrieval_eval.py`
+- 实现 `calculate_hit_rate()`，用于判断 Top-K 检索结果是否至少命中一个正确 chunk
+- 实现 `calculate_recall()`，用于计算正确 chunks 的召回比例
+- 实现 `calculate_mrr()`，用于衡量第一个正确结果的排名
+- 实现 `evaluate_single_query()` 和 `evaluate_queries()`，支持单条和多条 query 的检索评估
+- 新增 `eval_cli.py`
+- 支持基于 `chunks.json` 和人工标注的 `eval_queries.json` 运行检索评估
+- 新增 `tests/test_retrieval_eval.py`
+- 当前项目已经具备关键词检索和基础检索评估能力
