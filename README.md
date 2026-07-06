@@ -111,3 +111,16 @@
 - 新增 `tests/test_api_main.py`
 - 使用 FastAPI `TestClient` 测试基础接口
 - 当前项目开始从命令行工具升级为可通过 HTTP 调用的后端服务
+
+### Day 14
+
+- 新增 `project_service.py`
+- 将项目扫描、chunk 构建、chunk 统计逻辑从 `main.py` 中抽取到 service 层
+- 新增 `api_schema.py`
+- 使用 Pydantic 定义 `/scan` 接口请求体 `ScanRequest`
+- 修改 `api_main.py`
+- 新增 `POST /scan` 接口，支持通过 HTTP 请求扫描项目并构建 chunks
+- `/scan` 支持 `project_path`、`chunk_size`、`overlap`、`save_chunks` 和 `output_path`
+- 新增 `tests/test_api_scan.py`
+- 测试 `/scan` 成功扫描、路径不存在、非法 overlap 和保存 chunks 的情况
+- 当前项目已经从基础 FastAPI 入口推进到业务 API 接口

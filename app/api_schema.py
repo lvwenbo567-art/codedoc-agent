@@ -1,0 +1,15 @@
+from pydantic import BaseModel
+
+from config import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE
+
+
+class ScanRequest(BaseModel):
+    """
+    /scan 接口请求体。
+    """
+
+    project_path: str
+    chunk_size: int = DEFAULT_CHUNK_SIZE
+    overlap: int = DEFAULT_CHUNK_OVERLAP
+    save_chunks: bool = False
+    output_path: str = "outputs/chunks.json"
