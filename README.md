@@ -100,3 +100,14 @@
 - 支持基于 `chunks.json` 和人工标注的 `eval_queries.json` 运行检索评估
 - 新增 `tests/test_retrieval_eval.py`
 - 当前项目已经具备关键词检索和基础检索评估能力
+
+### Day 13
+
+- 新增 `api_main.py`
+- 引入 FastAPI，创建 CodeDoc Research Agent API 后端入口
+- 新增 `/health` 接口，用于服务健康检查
+- 新增 `/version` 接口，用于查看当前 API 版本和阶段
+- 新增 `/config` 接口，用于查看项目基础配置
+- 新增 `tests/test_api_main.py`
+- 使用 FastAPI `TestClient` 测试基础接口
+- 当前项目开始从命令行工具升级为可通过 HTTP 调用的后端服务
