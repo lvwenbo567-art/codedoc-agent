@@ -13,3 +13,12 @@ class ScanRequest(BaseModel):
     overlap: int = DEFAULT_CHUNK_OVERLAP
     save_chunks: bool = False
     output_path: str = "outputs/chunks.json"
+
+class SearchRequest(BaseModel):
+    """
+    /search 接口请求体。
+    """
+
+    chunks_path: str = "outputs/chunks.json"
+    query: str
+    top_k: int = 5

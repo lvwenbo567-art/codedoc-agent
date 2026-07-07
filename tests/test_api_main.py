@@ -31,7 +31,7 @@ def test_get_version():
 
     assert data["service"] == "codedoc-agent"
     assert data["version"] == "0.1.0"
-    assert data["stage"] == "day13-fastapi-entry"
+    assert data["stage"] == "day14-scan-api"
 
 
 def test_get_config():

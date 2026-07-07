@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 
-from api_schema import ScanRequest
+from api_schema import ScanRequest, SearchRequest
 from config import (
     DEFAULT_BASE_URL,
     DEFAULT_CHUNK_OVERLAP,
@@ -10,7 +10,7 @@ from config import (
 )
 from logger import setup_logger
 from project_service import scan_project
-
+from search_service import search_chunks_from_json
 
 logger = setup_logger()
 
@@ -46,7 +46,7 @@ def get_version() -> dict:
     return {
         "service": "codedoc-agent",
         "version": "0.1.0",
-        "stage": "day14-scan-api",
+        "stage": "day15-search-api",
     }
 
 
@@ -105,6 +105,52 @@ def scan_project_api(request: ScanRequest) -> dict:
 
     except ValueError as e:
         logger.error("参数错误: %s", e)
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        )
+    
+@app.post("/search")
+def search_chunks_api(request: SearchRequest) -> dict:
+    """
+    从 chunks.json 中检索相关 chunks。
+    """
+    logger.info(
+        "调用 /search 接口，chunks_path=%s, query=%s, top_k=%s",
+        request.chunks_path,
+        request.query,
+        request.top_k,
+    )
+
+    try:
+        results = search_chunks_from_json(
+            input_path=request.chunks_path,
+            query=request.query,
+            top_k=request.top_k,
+        )
+
+        return {
+            "success": True,
+            "data": {
+                "chunks_path": request.chunks_path,
+                "query": request.query,
+                "top_k": request.top_k,
+                "result_count": len(results),
+                "results": results,
+            },
+        }
+
+    except FileNotFoundError as e:
+        logger.error("chunks 文件不存在: %s", e)
+
+        raise HTTPException(
+            status_code=404,
+            detail=str(e),
+        )
+
+    except ValueError as e:
+        logger.error("检索参数错误: %s", e)
 
         raise HTTPException(
             status_code=400,

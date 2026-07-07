@@ -15,6 +15,9 @@ env/
 *.log
 logs/
 
+# Local test temp files
+.tmp_pytest/
+
 # Database
 *.db
 *.sqlite
