@@ -124,3 +124,33 @@
 - 新增 `tests/test_api_scan.py`
 - 测试 `/scan` 成功扫描、路径不存在、非法 overlap 和保存 chunks 的情况
 - 当前项目已经从基础 FastAPI 入口推进到业务 API 接口
+
+### Day 15
+
+- 修改 `api_schema.py`
+- 新增 `SearchRequest`，用于定义 `/search` 接口请求体
+- 修改 `api_main.py`
+- 新增 `POST /search` 接口
+- `/search` 支持从 `chunks.json` 中根据 query 检索 Top-K chunks
+- 复用 `search_service.py` 中的 `search_chunks_from_json()`
+- 新增 `tests/test_api_search.py`
+- 测试 `/search` 成功检索、无命中、chunks 文件不存在、空 query、非法 top_k 等情况
+- 当前项目已经支持通过 HTTP API 完成项目扫描和 chunks 检索
+
+### Day 16
+
+- 新增 `api_response.py`
+- 实现统一成功响应 `success_response()`
+- 实现统一失败响应 `error_response()`
+- 实现 HTTP 状态码到错误码的转换
+- 修改 `api_schema.py`
+- 新增 `EvalRequest`，用于定义 `/eval` 接口请求体
+- 新增 `eval_service.py`
+- 将评估文件读取和检索评估流程封装到 service 层
+- 修改 `api_main.py`
+- 新增 `POST /eval` 接口，支持通过 HTTP API 执行检索评估
+- 为 `HTTPException` 和请求参数校验错误增加统一异常处理
+- 修改 `/health`、`/version`、`/config`、`/scan`、`/search`，统一返回 `{success, data}` 格式
+- 新增 `tests/test_api_response.py`
+- 新增 `tests/test_api_eval.py`
+- 当前项目已经支持通过 API 完成项目扫描、chunks 检索和检索评估

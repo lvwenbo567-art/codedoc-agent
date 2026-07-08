@@ -18,8 +18,9 @@ def test_health_check():
 
     data = response.json()
 
-    assert data["status"] == "ok"
-    assert data["service"] == "codedoc-agent"
+    assert data["success"] is True
+    assert data["data"]["status"] == "ok"
+    assert data["data"]["service"] == "codedoc-agent"
 
 
 def test_get_version():
@@ -29,9 +30,10 @@ def test_get_version():
 
     data = response.json()
 
-    assert data["service"] == "codedoc-agent"
-    assert data["version"] == "0.1.0"
-    assert data["stage"] == "day14-scan-api"
+    assert data["success"] is True
+    assert data["data"]["service"] == "codedoc-agent"
+    assert data["data"]["version"] == "0.1.0"
+    assert data["data"]["stage"] == "day16-eval-response-api"
 
 
 def test_get_config():
@@ -41,10 +43,14 @@ def test_get_config():
 
     data = response.json()
 
-    assert ".md" in data["supported_suffixes"]
-    assert ".txt" in data["supported_suffixes"]
-    assert ".py" in data["supported_suffixes"]
+    assert data["success"] is True
 
-    assert data["default_chunk_size"] > 0
-    assert data["default_chunk_overlap"] >= 0
-    assert data["default_model_name"] == "mock-model"
+    config = data["data"]
+
+    assert ".md" in config["supported_suffixes"]
+    assert ".txt" in config["supported_suffixes"]
+    assert ".py" in config["supported_suffixes"]
+
+    assert config["default_chunk_size"] > 0
+    assert config["default_chunk_overlap"] >= 0
+    assert config["default_model_name"] == "mock-model"
