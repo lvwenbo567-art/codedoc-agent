@@ -154,3 +154,47 @@
 - 新增 `tests/test_api_response.py`
 - 新增 `tests/test_api_eval.py`
 - 当前项目已经支持通过 API 完成项目扫描、chunks 检索和检索评估
+
+### Day 17
+
+- 修改 `config.py`
+- 新增默认数据库路径 `DEFAULT_DB_PATH`
+- 新增 `db.py`
+- 支持初始化 SQLite 数据库
+- 新增 `projects`、`files`、`chunks` 三张表
+- 新增 `repository.py`
+- 支持保存一次项目扫描快照
+- 支持查询项目扫描记录
+- 支持查询 chunks 列表
+- 支持根据 `chunk_id` 查询 chunk 详情
+- 修改 `project_service.py`
+- `/scan` 支持将扫描结果写入 SQLite
+- 修改 `api_schema.py`
+- `ScanRequest` 新增 `save_to_db` 和 `db_path`
+- 修改 `api_main.py`
+- 新增 `GET /projects`
+- 新增 `GET /chunks`
+- 新增 `GET /chunks/{chunk_id}`
+- 当前项目已经支持将 RAG 数据从 JSON 文件升级为 SQLite 元数据存储
+
+
+### Day 18
+
+- 修改 `db.py`
+- 启用 SQLite 外键约束
+- 为项目、文件和 chunk 常用查询字段增加索引
+- 修改 `repository.py`
+- 新增统一分页参数校验
+- 项目、文件和 chunk 查询支持 `limit` 和 `offset`
+- 新增 `get_project_by_id()`
+- 新增 `list_files()` 和 `get_file_by_id()`
+- 新增 `get_chunk_by_id()`
+- 为项目扫描数据写入增加事务回滚
+- 修改 `api_main.py`
+- 新增 `GET /projects/{project_id}`
+- 新增 `GET /files`
+- 新增 `GET /files/{file_id}`
+- 修改 `GET /chunks`，支持分页
+- 修改 chunk 详情接口，改为通过数据库自增 ID 查询
+- 新增数据库查询和分页测试
+- 当前 FastAPI + SQLite 后端基础阶段基本完成

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from config import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE
+from config import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, DEFAULT_DB_PATH
 
 
 class ScanRequest(BaseModel):
@@ -13,6 +13,8 @@ class ScanRequest(BaseModel):
     overlap: int = DEFAULT_CHUNK_OVERLAP
     save_chunks: bool = False
     output_path: str = "outputs/chunks.json"
+    save_to_db: bool = True
+    db_path: str = DEFAULT_DB_PATH
 
 class SearchRequest(BaseModel):
     """

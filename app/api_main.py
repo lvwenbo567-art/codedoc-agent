@@ -19,7 +19,14 @@ from eval_service import evaluate_retrieval_from_files
 from logger import setup_logger
 from project_service import scan_project
 from search_service import search_chunks_from_json
-
+from repository import (
+    get_chunk_by_id,
+    get_file_by_id,
+    get_project_by_id,
+    list_chunks,
+    list_files,
+    list_projects,
+)
 
 logger = setup_logger()
 
@@ -132,7 +139,9 @@ def scan_project_api(request: ScanRequest) -> dict:
             overlap=request.overlap,
             save_chunks=request.save_chunks,
             output_path=request.output_path,
-        )
+            save_to_db=request.save_to_db,
+            db_path=request.db_path,
+)
 
         return success_response(data=result)
 
@@ -243,3 +252,196 @@ def evaluate_retrieval_api(request: EvalRequest) -> dict:
             status_code=400,
             detail=str(e),
         )
+    
+@app.get("/projects")
+def list_projects_api(db_path: str = "data/codedoc.db") -> dict:
+    """
+    查询项目扫描记录。
+    """
+    logger.info("调用 /projects 接口，db_path=%s", db_path)
+
+    projects = list_projects(db_path=db_path)
+
+    return success_response(
+        data={
+            "db_path": db_path,
+            "project_count": len(projects),
+            "projects": projects,
+        }
+    )
+@app.get("/chunks")
+def list_chunks_api(
+    db_path: str = "data/codedoc.db",
+    project_id: int | None = None,
+    chunk_type: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> dict:
+    """
+    查询 chunks。
+    """
+    try:
+        chunks = list_chunks(
+            project_id=project_id,
+            chunk_type=chunk_type,
+            limit=limit,
+            offset=offset,
+            db_path=db_path,
+        )
+
+        return success_response(
+            data={
+                "db_path": db_path,
+                "project_id": project_id,
+                "chunk_type": chunk_type,
+                "limit": limit,
+                "offset": offset,
+                "chunk_count": len(chunks),
+                "chunks": chunks,
+            }
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        )
+@app.get("/chunks/{chunk_db_id}")
+def get_chunk_api(
+    chunk_db_id: int,
+    db_path: str = "data/codedoc.db",
+) -> dict:
+    """
+    根据数据库 ID 查询单个 chunk。
+    """
+    chunk = get_chunk_by_id(
+        chunk_db_id=chunk_db_id,
+        db_path=db_path,
+    )
+
+    if chunk is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"chunk 不存在：{chunk_db_id}",
+        )
+
+    return success_response(data=chunk)
+    
+
+@app.get("/projects")
+def list_projects_api(
+    db_path: str = "data/codedoc.db",
+    limit: int = 50,
+    offset: int = 0,
+) -> dict:
+    """
+    分页查询项目扫描记录。
+    """
+    logger.info(
+        "调用 /projects，db_path=%s, limit=%s, offset=%s",
+        db_path,
+        limit,
+        offset,
+    )
+
+    try:
+        projects = list_projects(
+            limit=limit,
+            offset=offset,
+            db_path=db_path,
+        )
+
+        return success_response(
+            data={
+                "db_path": db_path,
+                "limit": limit,
+                "offset": offset,
+                "project_count": len(projects),
+                "projects": projects,
+            }
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        )
+@app.get("/projects/{project_id}")
+def get_project_api(
+    project_id: int,
+    db_path: str = "data/codedoc.db",
+) -> dict:
+    """
+    查询单个项目扫描记录。
+    """
+    project = get_project_by_id(
+        project_id=project_id,
+        db_path=db_path,
+    )
+
+    if project is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"项目记录不存在：{project_id}",
+        )
+
+    return success_response(data=project)
+
+@app.get("/files")
+def list_files_api(
+    db_path: str = "data/codedoc.db",
+    project_id: int | None = None,
+    suffix: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> dict:
+    """
+    查询文件记录。
+    """
+    try:
+        files = list_files(
+            project_id=project_id,
+            suffix=suffix,
+            limit=limit,
+            offset=offset,
+            db_path=db_path,
+        )
+
+        return success_response(
+            data={
+                "db_path": db_path,
+                "project_id": project_id,
+                "suffix": suffix,
+                "limit": limit,
+                "offset": offset,
+                "file_count": len(files),
+                "files": files,
+            }
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        )
+    
+@app.get("/files/{file_id}")
+def get_file_api(
+    file_id: int,
+    db_path: str = "data/codedoc.db",
+) -> dict:
+    """
+    查询单个文件记录。
+    """
+    file = get_file_by_id(
+        file_id=file_id,
+        db_path=db_path,
+    )
+
+    if file is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"文件记录不存在：{file_id}",
+        )
+
+    return success_response(data=file)

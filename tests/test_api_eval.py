@@ -213,7 +213,8 @@ def test_evaluate_retrieval_api_validation_error():
         "/eval",
         json={
             "chunks_path": "outputs/chunks.json",
-            "top_k": 3,
+            "eval_path": "data/eval_queries.json",
+            "top_k": "bad",
         },
     )
 

@@ -1,34 +1,30 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from chunk_storage import calculate_chunk_stats, save_chunks_to_json
 from chunker import build_chunks
-from config import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE
+from config import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, DEFAULT_DB_PATH
 from file_loader import load_project_files
-from logger import setup_logger
-
-
-logger = setup_logger()
+from repository import save_project_snapshot
 
 
 def build_file_summaries(files: List[Dict]) -> List[Dict]:
     """
     构建文件摘要信息。
-
-    不返回完整 content，避免 API 响应过大。
     """
-    summaries = []
+    results = []
 
     for file in files:
-        summaries.append(
+        results.append(
             {
                 "path": file["path"],
                 "name": file["name"],
                 "suffix": file["suffix"],
                 "length": file["length"],
+                "content_preview": file["content"][:150],
             }
         )
 
-    return summaries
+    return results
 
 
 def build_chunk_previews(
@@ -38,22 +34,22 @@ def build_chunk_previews(
     """
     构建 chunk 预览信息。
     """
-    previews = []
+    results = []
 
     for chunk in chunks[:limit]:
-        previews.append(
+        results.append(
             {
                 "chunk_id": chunk["chunk_id"],
-                "source_name": chunk["source_name"],
                 "source_path": chunk["source_path"],
+                "source_name": chunk["source_name"],
                 "chunk_type": chunk["chunk_type"],
                 "chunk_index": chunk["chunk_index"],
-                "length": chunk["length"],
                 "content_preview": chunk["content"][:150],
+                "length": chunk["length"],
             }
         )
 
-    return previews
+    return results
 
 
 def scan_project(
@@ -62,17 +58,12 @@ def scan_project(
     overlap: int = DEFAULT_CHUNK_OVERLAP,
     save_chunks: bool = False,
     output_path: str = "outputs/chunks.json",
+    save_to_db: bool = True,
+    db_path: str = DEFAULT_DB_PATH,
 ) -> Dict:
     """
-    扫描项目目录，构建 chunks，并返回结构化结果。
+    扫描项目目录，构建 chunks，并可选保存到 JSON 和 SQLite。
     """
-    logger.info(
-        "开始扫描项目，project_path=%s, chunk_size=%s, overlap=%s",
-        project_path,
-        chunk_size,
-        overlap,
-    )
-
     files = load_project_files(project_path)
 
     chunks = build_chunks(
@@ -91,20 +82,24 @@ def scan_project(
             output_path=output_path,
         )
 
-    result = {
+    project_id: Optional[int] = None
+
+    if save_to_db:
+        project_id = save_project_snapshot(
+            project_path=project_path,
+            files=files,
+            chunks=chunks,
+            db_path=db_path,
+        )
+
+    return {
         "project_path": project_path,
+        "project_id": project_id,
         "file_count": len(files),
         "chunk_count": len(chunks),
         "chunk_stats": stats,
         "files": build_file_summaries(files),
         "chunk_previews": build_chunk_previews(chunks),
         "saved_path": str(saved_path) if saved_path else None,
+        "db_path": db_path if save_to_db else None,
     }
-
-    logger.info(
-        "项目扫描完成，file_count=%s, chunk_count=%s",
-        result["file_count"],
-        result["chunk_count"],
-    )
-
-    return result
