@@ -33,7 +33,7 @@ def test_get_version():
     assert data["success"] is True
     assert data["data"]["service"] == "codedoc-agent"
     assert data["data"]["version"] == "0.1.0"
-    assert data["data"]["stage"] == "day16-eval-response-api"
+    assert data["data"]["stage"] == "day19-vector-index"
 
 
 def test_get_config():

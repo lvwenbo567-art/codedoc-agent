@@ -198,3 +198,24 @@
 - 修改 chunk 详情接口，改为通过数据库自增 ID 查询
 - 新增数据库查询和分页测试
 - 当前 FastAPI + SQLite 后端基础阶段基本完成
+
+### Day 19
+
+- 修改 `config.py`
+- 新增 Embedding 模型、向量维度和向量索引路径配置
+- 新增 `embedding_client.py`
+- 实现本地确定性哈希 Embedding v0
+- 支持单条文本和批量文本向量化
+- 对生成向量进行 L2 归一化
+- 新增 `vector_store.py`
+- 实现余弦相似度计算
+- 支持向量索引的 JSON 保存和读取
+- 新增 `index_service.py`
+- 支持从 `chunks.json` 为所有 chunks 生成向量
+- 向量记录同时保存 chunk metadata 和 embedding
+- 修改 `api_schema.py`
+- 新增 `IndexRequest`
+- 修改 `api_main.py`
+- 新增 `POST /index`
+- 新增 Embedding、向量存储、索引服务和 API 测试
+- 当前项目正式进入手写向量 RAG 阶段

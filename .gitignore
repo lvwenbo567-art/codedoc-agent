@@ -17,6 +17,7 @@ logs/
 
 # Local test temp files
 .tmp_pytest/
+.pytest-tmp/
 
 # Database
 *.db

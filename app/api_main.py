@@ -7,7 +7,13 @@ from api_response import (
     http_status_to_error_code,
     success_response,
 )
-from api_schema import EvalRequest, ScanRequest, SearchRequest
+
+from api_schema import (
+    EvalRequest,
+    IndexRequest,
+    ScanRequest,
+    SearchRequest,
+)
 from config import (
     DEFAULT_BASE_URL,
     DEFAULT_CHUNK_OVERLAP,
@@ -27,6 +33,7 @@ from repository import (
     list_files,
     list_projects,
 )
+from index_service import build_vector_index_from_json
 
 logger = setup_logger()
 
@@ -102,7 +109,7 @@ def get_version() -> dict:
         data={
             "service": "codedoc-agent",
             "version": "0.1.0",
-            "stage": "day16-eval-response-api",
+            "stage": "day19-vector-index",
         }
     )
 
@@ -445,3 +452,42 @@ def get_file_api(
         )
 
     return success_response(data=file)
+
+@app.post("/index")
+def build_vector_index_api(request: IndexRequest) -> dict:
+    """
+    从 chunks.json 构建向量索引。
+    """
+    logger.info(
+        "调用 /index，chunks_path=%s, output_path=%s, model_name=%s, dimension=%s",
+        request.chunks_path,
+        request.output_path,
+        request.model_name,
+        request.dimension,
+    )
+
+    try:
+        result = build_vector_index_from_json(
+            chunks_path=request.chunks_path,
+            output_path=request.output_path,
+            model_name=request.model_name,
+            dimension=request.dimension,
+        )
+
+        return success_response(data=result)
+
+    except FileNotFoundError as e:
+        logger.error("构建向量索引失败，文件不存在: %s", e)
+
+        raise HTTPException(
+            status_code=404,
+            detail=str(e),
+        )
+
+    except ValueError as e:
+        logger.error("构建向量索引参数错误: %s", e)
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        )

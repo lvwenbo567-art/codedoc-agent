@@ -1,6 +1,13 @@
 from pydantic import BaseModel
 
-from config import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, DEFAULT_DB_PATH
+from config import (
+    DEFAULT_CHUNK_OVERLAP,
+    DEFAULT_CHUNK_SIZE,
+    DEFAULT_DB_PATH,
+    DEFAULT_EMBEDDING_DIMENSION,
+    DEFAULT_EMBEDDING_MODEL,
+    DEFAULT_VECTOR_INDEX_PATH,
+)
 
 
 class ScanRequest(BaseModel):
@@ -33,3 +40,13 @@ class EvalRequest(BaseModel):
     chunks_path: str = "outputs/chunks.json"
     eval_path: str = "data/eval_queries.json"
     top_k: int = 5
+
+class IndexRequest(BaseModel):
+    """
+    /index 接口请求体。
+    """
+
+    chunks_path: str = "outputs/chunks.json"
+    output_path: str = DEFAULT_VECTOR_INDEX_PATH
+    model_name: str = DEFAULT_EMBEDDING_MODEL
+    dimension: int = DEFAULT_EMBEDDING_DIMENSION

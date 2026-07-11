@@ -8,3 +8,7 @@ DEFAULT_BASE_URL = "http://localhost:8000/v1"
 DEFAULT_API_KEY = "EMPTY"
 
 DEFAULT_DB_PATH = "data/codedoc.db"
+
+DEFAULT_EMBEDDING_MODEL = "mock-hash-embedding"
+DEFAULT_EMBEDDING_DIMENSION = 64
+DEFAULT_VECTOR_INDEX_PATH = "outputs/vector_index.json"
