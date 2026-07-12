@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-
+from vector_search_service import search_vector_index_from_file
 from api_response import (
     error_response,
     http_status_to_error_code,
@@ -13,6 +13,7 @@ from api_schema import (
     IndexRequest,
     ScanRequest,
     SearchRequest,
+    VectorSearchRequest,
 )
 from config import (
     DEFAULT_BASE_URL,
@@ -109,7 +110,7 @@ def get_version() -> dict:
         data={
             "service": "codedoc-agent",
             "version": "0.1.0",
-            "stage": "day19-vector-index",
+            "stage": "day20-vector-search",
         }
     )
 
@@ -486,6 +487,48 @@ def build_vector_index_api(request: IndexRequest) -> dict:
 
     except ValueError as e:
         logger.error("构建向量索引参数错误: %s", e)
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        )
+    
+@app.post("/vector_search")
+def vector_search_api(
+    request: VectorSearchRequest,
+) -> dict:
+    """
+    从向量索引中检索相关 chunks。
+    """
+    logger.info(
+        "调用 /vector_search，index_path=%s, query=%s, top_k=%s",
+        request.index_path,
+        request.query,
+        request.top_k,
+    )
+
+    try:
+        result = search_vector_index_from_file(
+            query=request.query,
+            index_path=request.index_path,
+            top_k=request.top_k,
+            model_name=request.model_name,
+            dimension=request.dimension,
+            chunk_type=request.chunk_type,
+        )
+
+        return success_response(data=result)
+
+    except FileNotFoundError as e:
+        logger.error("向量索引文件不存在: %s", e)
+
+        raise HTTPException(
+            status_code=404,
+            detail=str(e),
+        )
+
+    except ValueError as e:
+        logger.error("向量检索参数错误: %s", e)
 
         raise HTTPException(
             status_code=400,

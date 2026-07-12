@@ -219,3 +219,20 @@
 - 新增 `POST /index`
 - 新增 Embedding、向量存储、索引服务和 API 测试
 - 当前项目正式进入手写向量 RAG 阶段
+
+### Day 20
+
+- 新增 `vector_search_service.py`
+- 支持将用户 query 转换成 Embedding
+- 支持计算 query 与 chunk 向量的余弦相似度
+- 支持按照相似度从高到低返回 Top-K chunks
+- 支持通过 `chunk_type` 过滤代码或文档 chunks
+- 向量检索结果返回 rank、score 和 chunk metadata
+- 新增 `vector_search_cli.py`
+- 支持通过命令行执行向量检索
+- 修改 `api_schema.py`
+- 新增 `VectorSearchRequest`
+- 修改 `api_main.py`
+- 新增 `POST /vector_search`
+- 新增向量检索 service 和 API 测试
+- 当前项目已经完成手写向量索引和向量检索基础链路

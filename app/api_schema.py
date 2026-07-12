@@ -50,3 +50,15 @@ class IndexRequest(BaseModel):
     output_path: str = DEFAULT_VECTOR_INDEX_PATH
     model_name: str = DEFAULT_EMBEDDING_MODEL
     dimension: int = DEFAULT_EMBEDDING_DIMENSION
+
+class VectorSearchRequest(BaseModel):
+    """
+    /vector_search 接口请求体。
+    """
+
+    index_path: str = DEFAULT_VECTOR_INDEX_PATH
+    query: str
+    top_k: int = 5
+    model_name: str = DEFAULT_EMBEDDING_MODEL
+    dimension: int = DEFAULT_EMBEDDING_DIMENSION
+    chunk_type: str | None = None
