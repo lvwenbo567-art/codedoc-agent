@@ -1,6 +1,9 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+
+from api_schema import AskRequest
+from rag_service import ask_from_vector_index
 from vector_search_service import search_vector_index_from_file
 from api_response import (
     error_response,
@@ -110,7 +113,7 @@ def get_version() -> dict:
         data={
             "service": "codedoc-agent",
             "version": "0.1.0",
-            "stage": "day20-vector-search",
+            "stage": "day21-rag-ask",
         }
     )
 
@@ -530,6 +533,44 @@ def vector_search_api(
     except ValueError as e:
         logger.error("向量检索参数错误: %s", e)
 
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        )
+    
+@app.post("/ask")
+def ask_api(request: AskRequest) -> dict:
+    """
+    基于向量索引执行 RAG 问答。
+    """
+    logger.info(
+        "调用 /ask，query=%s, index_path=%s, top_k=%s",
+        request.query,
+        request.index_path,
+        request.top_k,
+    )
+
+    try:
+        result = ask_from_vector_index(
+            query=request.query,
+            index_path=request.index_path,
+            top_k=request.top_k,
+            embedding_model=request.embedding_model,
+            dimension=request.dimension,
+            chat_model=request.chat_model,
+            chunk_type=request.chunk_type,
+            max_context_chars=request.max_context_chars,
+        )
+
+        return success_response(data=result)
+
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=str(e),
+        )
+
+    except ValueError as e:
         raise HTTPException(
             status_code=400,
             detail=str(e),

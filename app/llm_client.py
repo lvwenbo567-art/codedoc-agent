@@ -26,3 +26,41 @@ class LLMClient:
             f"这是一个模拟摘要，原文长度为 {len(text)} 个字符，"
             f"实际用于摘要的文本长度为 {len(clipped_text)} 个字符。"
         )
+    
+def generate_chat_response(
+    prompt: str,
+    model_name: str = "mock-chat-model",
+) -> str:
+    """
+    模拟 Chat 大模型生成回答。
+
+    当前用于打通 RAG 问答链路。
+    后续替换为真实 OpenAI-compatible、Ollama 或 vLLM API。
+    """
+    if not prompt or not prompt.strip():
+        raise ValueError("prompt 不能为空")
+
+    source_marker = "[Source 1]"
+
+    if source_marker not in prompt:
+        return (
+            "当前没有检索到足够的项目内容，"
+            "暂时无法根据项目资料回答该问题。"
+        )
+
+    source_content = prompt.split(source_marker, maxsplit=1)[1]
+
+    if "[Source 2]" in source_content:
+        source_content = source_content.split(
+            "[Source 2]",
+            maxsplit=1,
+        )[0]
+
+    source_content = source_content.strip()
+
+    return (
+        f"根据当前检索结果，最相关的信息如下：\n\n"
+        f"{source_content[:600]}\n\n"
+        f"[Source 1]\n\n"
+        f"当前回答由 {model_name} 生成。"
+    )

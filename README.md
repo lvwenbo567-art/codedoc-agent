@@ -236,3 +236,23 @@
 - 新增 `POST /vector_search`
 - 新增向量检索 service 和 API 测试
 - 当前项目已经完成手写向量索引和向量检索基础链路
+
+### Day 21
+
+- 修改 `vector_search_service.py`
+- 支持在内部检索时返回完整 chunk 内容
+- 新增 `prompt_builder.py`
+- 支持将 Top-K 检索结果构建为带来源编号的 RAG Prompt
+- 支持限制上下文最大长度
+- 新增 `citation_builder.py`
+- 支持返回结构化引用来源
+- 扩展 `llm_client.py`
+- 新增 Mock Chat 模型调用
+- 新增 `rag_service.py`
+- 实现检索、Prompt、生成和引用的基础 RAG 闭环
+- 修改 `api_schema.py`
+- 新增 `AskRequest`
+- 修改 `api_main.py`
+- 新增 `POST /ask`
+- 新增 Prompt、引用、RAG Service 和 API 测试
+- 当前项目已经具备基础向量 RAG 问答能力

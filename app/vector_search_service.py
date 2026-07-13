@@ -16,6 +16,7 @@ def search_vector_records(
     model_name: str = DEFAULT_EMBEDDING_MODEL,
     dimension: int = DEFAULT_EMBEDDING_DIMENSION,
     chunk_type: Optional[str] = None,
+    include_content: bool = False,
 ) -> List[Dict]:
     """
     在向量记录中检索与 query 最相似的 Top-K chunks。
@@ -25,9 +26,6 @@ def search_vector_records(
 
     if top_k <= 0:
         raise ValueError("top_k 必须大于 0")
-
-    if dimension <= 0:
-        raise ValueError("dimension 必须大于 0")
 
     embedding_client = EmbeddingClient(
         model_name=model_name,
@@ -39,9 +37,8 @@ def search_vector_records(
     scored_records = []
 
     for record in records:
-        if chunk_type is not None:
-            if record["chunk_type"] != chunk_type:
-                continue
+        if chunk_type is not None and record["chunk_type"] != chunk_type:
+            continue
 
         embedding = record.get("embedding")
 
@@ -55,19 +52,22 @@ def search_vector_records(
             embedding,
         )
 
-        scored_records.append(
-            {
-                "chunk_id": record["chunk_id"],
-                "source_path": record["source_path"],
-                "source_name": record["source_name"],
-                "source_suffix": record["source_suffix"],
-                "chunk_type": record["chunk_type"],
-                "chunk_index": record["chunk_index"],
-                "content_preview": record["content"][:200],
-                "length": record["length"],
-                "score": score,
-            }
-        )
+        result = {
+            "chunk_id": record["chunk_id"],
+            "source_path": record["source_path"],
+            "source_name": record["source_name"],
+            "source_suffix": record["source_suffix"],
+            "chunk_type": record["chunk_type"],
+            "chunk_index": record["chunk_index"],
+            "content_preview": record["content"][:200],
+            "length": record["length"],
+            "score": score,
+        }
+
+        if include_content:
+            result["content"] = record["content"]
+
+        scored_records.append(result)
 
     scored_records.sort(
         key=lambda item: item["score"],
@@ -89,10 +89,8 @@ def search_vector_index_from_file(
     model_name: str = DEFAULT_EMBEDDING_MODEL,
     dimension: int = DEFAULT_EMBEDDING_DIMENSION,
     chunk_type: Optional[str] = None,
+    include_content: bool = False,
 ) -> Dict:
-    """
-    从本地向量索引文件中执行 Top-K 向量检索。
-    """
     records = load_vector_index(index_path)
 
     results = search_vector_records(
@@ -102,6 +100,7 @@ def search_vector_index_from_file(
         model_name=model_name,
         dimension=dimension,
         chunk_type=chunk_type,
+        include_content=include_content,
     )
 
     return {

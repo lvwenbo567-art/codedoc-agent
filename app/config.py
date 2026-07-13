@@ -12,3 +12,7 @@ DEFAULT_DB_PATH = "data/codedoc.db"
 DEFAULT_EMBEDDING_MODEL = "mock-hash-embedding"
 DEFAULT_EMBEDDING_DIMENSION = 64
 DEFAULT_VECTOR_INDEX_PATH = "outputs/vector_index.json"
+
+DEFAULT_CHAT_MODEL = "mock-chat-model"
+DEFAULT_MAX_CONTEXT_CHARS = 6000
+DEFAULT_RAG_TOP_K = 5
