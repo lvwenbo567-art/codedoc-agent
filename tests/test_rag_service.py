@@ -67,6 +67,7 @@ def test_ask_from_vector_index_success(tmp_path):
     )
 
     assert result["query"] == "def main(): print('hello')"
+    assert result["chat_provider"] == "mock"
     assert result["chat_model"] == "test-chat"
     assert result["embedding_model"] == "test-embedding"
     assert result["top_k"] == 1
@@ -75,6 +76,8 @@ def test_ask_from_vector_index_success(tmp_path):
     assert result["citations"][0]["citation_id"] == "Source 1"
     assert "[Source 1]" in result["answer"]
     assert "test-chat" in result["answer"]
+    assert result["answer_quality"]["is_valid"] is True
+    assert result["answer_quality"]["has_citations"] is True
 
 
 def test_ask_from_vector_index_chunk_type_filter(tmp_path):

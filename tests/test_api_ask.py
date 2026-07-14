@@ -68,6 +68,7 @@ def test_ask_api_success(tmp_path):
     assert data["success"] is True
     assert data["data"]["query"] == "def main(): pass"
     assert data["data"]["chat_model"] == "test-chat"
+    assert data["data"]["chat_provider"] == "mock"
     assert data["data"]["embedding_model"] == "test-embedding"
     assert data["data"]["top_k"] == 1
     assert data["data"]["chunk_type"] == "code"
@@ -75,6 +76,55 @@ def test_ask_api_success(tmp_path):
     assert "[Source 1]" in data["data"]["answer"]
     assert len(data["data"]["citations"]) == 1
     assert data["data"]["citations"][0]["source_path"] == "main.py"
+    assert data["data"]["answer_quality"]["is_valid"] is True
+
+
+def test_ask_api_model_timeout_maps_to_504(monkeypatch):
+    def fake_ask_from_vector_index(**kwargs):
+        raise TimeoutError("timeout")
+
+    monkeypatch.setattr(
+        "api_main.ask_from_vector_index",
+        fake_ask_from_vector_index,
+    )
+
+    response = client.post(
+        "/ask",
+        json={
+            "query": "main",
+        },
+    )
+
+    assert response.status_code == 504
+
+    data = response.json()
+
+    assert data["success"] is False
+    assert data["error"]["code"] == "MODEL_SERVICE_TIMEOUT"
+
+
+def test_ask_api_model_runtime_error_maps_to_502(monkeypatch):
+    def fake_ask_from_vector_index(**kwargs):
+        raise RuntimeError("bad gateway")
+
+    monkeypatch.setattr(
+        "api_main.ask_from_vector_index",
+        fake_ask_from_vector_index,
+    )
+
+    response = client.post(
+        "/ask",
+        json={
+            "query": "main",
+        },
+    )
+
+    assert response.status_code == 502
+
+    data = response.json()
+
+    assert data["success"] is False
+    assert data["error"]["code"] == "MODEL_SERVICE_ERROR"
 
 
 def test_ask_api_index_not_exists():
@@ -129,12 +179,12 @@ def test_ask_api_invalid_top_k(tmp_path):
         },
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 422
 
     data = response.json()
 
     assert data["success"] is False
-    assert data["error"]["code"] == "BAD_REQUEST"
+    assert data["error"]["code"] == "VALIDATION_ERROR"
 
 
 def test_ask_api_invalid_max_context_chars(tmp_path):
@@ -151,9 +201,9 @@ def test_ask_api_invalid_max_context_chars(tmp_path):
         },
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 422
 
     data = response.json()
 
     assert data["success"] is False
-    assert data["error"]["code"] == "BAD_REQUEST"
+    assert data["error"]["code"] == "VALIDATION_ERROR"

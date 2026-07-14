@@ -5,7 +5,13 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from prompt_builder import build_context, build_rag_prompt
+from prompt_builder import (
+    SYSTEM_PROMPT,
+    build_context,
+    build_rag_messages,
+    build_rag_prompt,
+    build_rag_user_prompt,
+)
 
 
 def build_chunks():
@@ -82,6 +88,37 @@ def test_build_rag_prompt_includes_query_context_and_answer_marker():
     assert "main function?" in prompt
     assert "[Source 1]" in prompt
     assert "def main(): pass" in prompt
+
+
+def test_build_rag_user_prompt_includes_query_and_context():
+    prompt = build_rag_user_prompt(
+        query="main function?",
+        retrieved_chunks=build_chunks(),
+    )
+
+    assert "main function?" in prompt
+    assert "[Source 1]" in prompt
+    assert "def main(): pass" in prompt
+
+
+def test_build_rag_messages_uses_system_and_user_roles():
+    messages = build_rag_messages(
+        query="main function?",
+        retrieved_chunks=build_chunks(),
+    )
+
+    assert messages == [
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT,
+        },
+        {
+            "role": "user",
+            "content": messages[1]["content"],
+        },
+    ]
+    assert "main function?" in messages[1]["content"]
+    assert "[Source 1]" in messages[1]["content"]
 
 
 def test_build_rag_prompt_empty_query():

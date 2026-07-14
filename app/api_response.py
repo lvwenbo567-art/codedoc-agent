@@ -48,5 +48,9 @@ def http_status_to_error_code(status_code: int) -> str:
 
     if status_code == 500:
         return "INTERNAL_SERVER_ERROR"
+    if status_code == 502:
+        return "MODEL_SERVICE_ERROR"
 
+    if status_code == 504:
+        return "MODEL_SERVICE_TIMEOUT"
     return "HTTP_ERROR"

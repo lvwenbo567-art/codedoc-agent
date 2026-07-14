@@ -2,7 +2,6 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from api_schema import AskRequest
 from rag_service import ask_from_vector_index
 from vector_search_service import search_vector_index_from_file
 from api_response import (
@@ -12,6 +11,7 @@ from api_response import (
 )
 
 from api_schema import (
+    AskRequest,
     EvalRequest,
     IndexRequest,
     ScanRequest,
@@ -20,6 +20,12 @@ from api_schema import (
 )
 from config import (
     DEFAULT_BASE_URL,
+    DEFAULT_CHAT_BASE_URL,
+    DEFAULT_CHAT_MAX_TOKENS,
+    DEFAULT_CHAT_MODEL,
+    DEFAULT_CHAT_PROVIDER,
+    DEFAULT_CHAT_TEMPERATURE,
+    DEFAULT_CHAT_TIMEOUT_SECONDS,
     DEFAULT_CHUNK_OVERLAP,
     DEFAULT_CHUNK_SIZE,
     DEFAULT_MODEL_NAME,
@@ -113,7 +119,7 @@ def get_version() -> dict:
         data={
             "service": "codedoc-agent",
             "version": "0.1.0",
-            "stage": "day21-rag-ask",
+            "stage": "day22-real-chat-adapter",
         }
     )
 
@@ -132,6 +138,12 @@ def get_config() -> dict:
             "default_chunk_overlap": DEFAULT_CHUNK_OVERLAP,
             "default_model_name": DEFAULT_MODEL_NAME,
             "default_base_url": DEFAULT_BASE_URL,
+            "default_chat_provider": DEFAULT_CHAT_PROVIDER,
+            "default_chat_model": DEFAULT_CHAT_MODEL,
+            "default_chat_base_url": DEFAULT_CHAT_BASE_URL,
+            "default_chat_timeout_seconds": DEFAULT_CHAT_TIMEOUT_SECONDS,
+            "default_chat_temperature": DEFAULT_CHAT_TEMPERATURE,
+            "default_chat_max_tokens": DEFAULT_CHAT_MAX_TOKENS,
         }
     )
 
@@ -557,11 +569,16 @@ def ask_api(request: AskRequest) -> dict:
             top_k=request.top_k,
             embedding_model=request.embedding_model,
             dimension=request.dimension,
+            chat_provider=request.chat_provider,
             chat_model=request.chat_model,
+            chat_base_url=request.chat_base_url,
+            chat_api_key=request.chat_api_key,
+            chat_timeout_seconds=request.chat_timeout_seconds,
+            temperature=request.temperature,
+            max_tokens=request.max_tokens,
             chunk_type=request.chunk_type,
             max_context_chars=request.max_context_chars,
         )
-
         return success_response(data=result)
 
     except FileNotFoundError as e:
@@ -573,5 +590,22 @@ def ask_api(request: AskRequest) -> dict:
     except ValueError as e:
         raise HTTPException(
             status_code=400,
+            detail=str(e),
+        )
+    except TimeoutError as e:
+        raise HTTPException(
+            status_code=504,
+            detail=str(e),
+        )
+
+    except ConnectionError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=str(e),
+        )
+
+    except RuntimeError as e:
+        raise HTTPException(
+            status_code=502,
             detail=str(e),
         )

@@ -1,7 +1,15 @@
-from pydantic import BaseModel
+from typing import Literal
+
+from pydantic import BaseModel, Field
 
 from config import (
+    DEFAULT_CHAT_API_KEY,
+    DEFAULT_CHAT_BASE_URL,
+    DEFAULT_CHAT_MAX_TOKENS,
     DEFAULT_CHAT_MODEL,
+    DEFAULT_CHAT_PROVIDER,
+    DEFAULT_CHAT_TEMPERATURE,
+    DEFAULT_CHAT_TIMEOUT_SECONDS,
     DEFAULT_CHUNK_OVERLAP,
     DEFAULT_CHUNK_SIZE,
     DEFAULT_DB_PATH,
@@ -12,9 +20,10 @@ from config import (
     DEFAULT_VECTOR_INDEX_PATH,
 )
 
+
 class ScanRequest(BaseModel):
     """
-    /scan 接口请求体。
+    /scan request body.
     """
 
     project_path: str
@@ -25,27 +34,30 @@ class ScanRequest(BaseModel):
     save_to_db: bool = True
     db_path: str = DEFAULT_DB_PATH
 
+
 class SearchRequest(BaseModel):
     """
-    /search 接口请求体。
+    /search request body.
     """
 
     chunks_path: str = "outputs/chunks.json"
     query: str
     top_k: int = 5
 
+
 class EvalRequest(BaseModel):
     """
-    /eval 接口请求体。
+    /eval request body.
     """
 
     chunks_path: str = "outputs/chunks.json"
     eval_path: str = "data/eval_queries.json"
     top_k: int = 5
 
+
 class IndexRequest(BaseModel):
     """
-    /index 接口请求体。
+    /index request body.
     """
 
     chunks_path: str = "outputs/chunks.json"
@@ -53,9 +65,10 @@ class IndexRequest(BaseModel):
     model_name: str = DEFAULT_EMBEDDING_MODEL
     dimension: int = DEFAULT_EMBEDDING_DIMENSION
 
+
 class VectorSearchRequest(BaseModel):
     """
-    /vector_search 接口请求体。
+    /vector_search request body.
     """
 
     index_path: str = DEFAULT_VECTOR_INDEX_PATH
@@ -68,14 +81,20 @@ class VectorSearchRequest(BaseModel):
 
 class AskRequest(BaseModel):
     """
-    /ask 接口请求体。
+    /ask request body.
     """
 
     query: str
     index_path: str = DEFAULT_VECTOR_INDEX_PATH
-    top_k: int = DEFAULT_RAG_TOP_K
+    top_k: int = Field(default=DEFAULT_RAG_TOP_K, gt=0)
     embedding_model: str = DEFAULT_EMBEDDING_MODEL
-    dimension: int = DEFAULT_EMBEDDING_DIMENSION
+    dimension: int = Field(default=DEFAULT_EMBEDDING_DIMENSION, gt=0)
+    chat_provider: Literal["mock", "openai_compatible"] = DEFAULT_CHAT_PROVIDER
     chat_model: str = DEFAULT_CHAT_MODEL
+    chat_base_url: str = DEFAULT_CHAT_BASE_URL
+    chat_api_key: str = DEFAULT_CHAT_API_KEY
+    chat_timeout_seconds: float = Field(default=DEFAULT_CHAT_TIMEOUT_SECONDS, gt=0)
+    temperature: float = Field(default=DEFAULT_CHAT_TEMPERATURE, ge=0, le=2)
+    max_tokens: int = Field(default=DEFAULT_CHAT_MAX_TOKENS, gt=0)
     chunk_type: str | None = None
-    max_context_chars: int = DEFAULT_MAX_CONTEXT_CHARS
+    max_context_chars: int = Field(default=DEFAULT_MAX_CONTEXT_CHARS, gt=0)

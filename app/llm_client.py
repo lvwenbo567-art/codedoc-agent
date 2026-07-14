@@ -1,66 +1,235 @@
-class LLMClient:
+from dataclasses import dataclass
+from typing import Dict, List, Optional
+
+import httpx
+
+from config import (
+    DEFAULT_CHAT_API_KEY,
+    DEFAULT_CHAT_BASE_URL,
+    DEFAULT_CHAT_MAX_TOKENS,
+    DEFAULT_CHAT_MODEL,
+    DEFAULT_CHAT_PROVIDER,
+    DEFAULT_CHAT_TEMPERATURE,
+    DEFAULT_CHAT_TIMEOUT_SECONDS,
+)
+
+
+@dataclass(frozen=True)
+class ChatConfig:
     """
-    大模型调用客户端。
-
-    当前 Day 3 是模拟版本。
-    后续会扩展为支持 OpenAI-compatible API、vLLM、本地模型服务等。
+    Chat model call configuration.
     """
 
-    def __init__(self, model_name: str, base_url: str, api_key: str):
-        self.model_name = model_name
-        self.base_url = base_url
-        self.api_key = api_key
+    provider: str = DEFAULT_CHAT_PROVIDER
+    model_name: str = DEFAULT_CHAT_MODEL
+    base_url: str = DEFAULT_CHAT_BASE_URL
+    api_key: str = DEFAULT_CHAT_API_KEY
+    timeout_seconds: float = DEFAULT_CHAT_TIMEOUT_SECONDS
+    temperature: float = DEFAULT_CHAT_TEMPERATURE
+    max_tokens: int = DEFAULT_CHAT_MAX_TOKENS
 
-    def summarize_text(self, text: str, max_chars: int = 3000) -> str:
+    def validate(self) -> None:
         """
-        总结文本内容。
-
-        Day 3 暂时返回模拟摘要，不真正调用大模型。
+        Validate chat configuration before sending a request.
         """
-        if not text or not text.strip():
-            return "文本为空，无法总结。"
+        if self.provider not in {"mock", "openai_compatible"}:
+            raise ValueError(f"unsupported chat provider: {self.provider}")
 
-        clipped_text = text[:max_chars]
+        if not self.model_name.strip():
+            raise ValueError("model_name cannot be empty")
+
+        if self.timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be greater than 0")
+
+        if not 0 <= self.temperature <= 2:
+            raise ValueError("temperature must be between 0 and 2")
+
+        if self.max_tokens <= 0:
+            raise ValueError("max_tokens must be greater than 0")
+
+        if self.provider == "openai_compatible" and not self.base_url.strip():
+            raise ValueError("openai_compatible provider requires base_url")
+
+
+class ChatClient:
+    """
+    Chat model client.
+
+    Supported providers:
+    1. mock
+    2. openai_compatible
+    """
+
+    def __init__(
+        self,
+        config: ChatConfig,
+        http_client: Optional[httpx.Client] = None,
+    ):
+        config.validate()
+
+        self.config = config
+        self.http_client = http_client
+
+    def generate(
+        self,
+        messages: List[Dict[str, str]],
+    ) -> str:
+        """
+        Generate an answer from chat messages.
+        """
+        self._validate_messages(messages)
+
+        if self.config.provider == "mock":
+            return self._generate_mock(messages)
+
+        return self._generate_openai_compatible(messages)
+
+    def _validate_messages(
+        self,
+        messages: List[Dict[str, str]],
+    ) -> None:
+        """
+        Validate chat messages.
+        """
+        if not messages:
+            raise ValueError("messages cannot be empty")
+
+        valid_roles = {"system", "user", "assistant"}
+
+        for message in messages:
+            role = message.get("role")
+            content = message.get("content")
+
+            if role not in valid_roles:
+                raise ValueError(f"unsupported message role: {role}")
+
+            if not isinstance(content, str):
+                raise ValueError("message content must be a string")
+
+            if not content.strip():
+                raise ValueError("message content cannot be empty")
+
+    def _generate_mock(
+        self,
+        messages: List[Dict[str, str]],
+    ) -> str:
+        """
+        Generate a deterministic mock answer for local tests.
+        """
+        user_message = messages[-1]["content"]
+
+        if "[Source 1]" not in user_message:
+            return (
+                "当前检索结果不足，无法根据项目内容可靠回答该问题。"
+            )
 
         return (
-            f"这是一个模拟摘要，原文长度为 {len(text)} 个字符，"
-            f"实际用于摘要的文本长度为 {len(clipped_text)} 个字符。"
+            "根据当前检索到的项目内容，可以从最相关的代码或文档片段中"
+            f"分析该问题。当前使用的模型是 {self.config.model_name}。[Source 1]"
         )
-    
+
+    def _generate_openai_compatible(
+        self,
+        messages: List[Dict[str, str]],
+    ) -> str:
+        """
+        Call an OpenAI-compatible /chat/completions endpoint.
+        """
+        url = f"{self.config.base_url.rstrip('/')}/chat/completions"
+
+        headers = {
+            "Content-Type": "application/json",
+        }
+
+        if self.config.api_key:
+            headers["Authorization"] = f"Bearer {self.config.api_key}"
+
+        payload = {
+            "model": self.config.model_name,
+            "messages": messages,
+            "temperature": self.config.temperature,
+            "max_tokens": self.config.max_tokens,
+            "stream": False,
+        }
+
+        owns_client = self.http_client is None
+        client = self.http_client or httpx.Client(
+            timeout=self.config.timeout_seconds,
+            trust_env=False,
+        )
+
+        try:
+            response = client.post(
+                url,
+                headers=headers,
+                json=payload,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+        except httpx.TimeoutException as exc:
+            raise TimeoutError("chat model request timed out") from exc
+
+        except httpx.RequestError as exc:
+            raise ConnectionError(
+                f"cannot connect to chat model service: {exc}"
+            ) from exc
+
+        except httpx.HTTPStatusError as exc:
+            status_code = exc.response.status_code
+            response_text = exc.response.text.strip()
+            if len(response_text) > 500:
+                response_text = response_text[:500] + "..."
+
+            detail = f"chat model service returned status code: {status_code}"
+            if response_text:
+                detail = f"{detail}; response body: {response_text}"
+
+            raise RuntimeError(
+                detail
+            ) from exc
+
+        finally:
+            if owns_client:
+                client.close()
+
+        try:
+            answer = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as exc:
+            raise ValueError("chat model response schema is invalid") from exc
+
+        if not isinstance(answer, str):
+            raise ValueError("chat model response content is not a string")
+
+        if not answer.strip():
+            raise ValueError("chat model returned an empty answer")
+
+        return answer.strip()
+
+
 def generate_chat_response(
-    prompt: str,
-    model_name: str = "mock-chat-model",
+    messages: List[Dict[str, str]],
+    provider: str = DEFAULT_CHAT_PROVIDER,
+    model_name: str = DEFAULT_CHAT_MODEL,
+    base_url: str = DEFAULT_CHAT_BASE_URL,
+    api_key: str = DEFAULT_CHAT_API_KEY,
+    timeout_seconds: float = DEFAULT_CHAT_TIMEOUT_SECONDS,
+    temperature: float = DEFAULT_CHAT_TEMPERATURE,
+    max_tokens: int = DEFAULT_CHAT_MAX_TOKENS,
 ) -> str:
     """
-    模拟 Chat 大模型生成回答。
-
-    当前用于打通 RAG 问答链路。
-    后续替换为真实 OpenAI-compatible、Ollama 或 vLLM API。
+    Unified chat model entrypoint for services.
     """
-    if not prompt or not prompt.strip():
-        raise ValueError("prompt 不能为空")
-
-    source_marker = "[Source 1]"
-
-    if source_marker not in prompt:
-        return (
-            "当前没有检索到足够的项目内容，"
-            "暂时无法根据项目资料回答该问题。"
-        )
-
-    source_content = prompt.split(source_marker, maxsplit=1)[1]
-
-    if "[Source 2]" in source_content:
-        source_content = source_content.split(
-            "[Source 2]",
-            maxsplit=1,
-        )[0]
-
-    source_content = source_content.strip()
-
-    return (
-        f"根据当前检索结果，最相关的信息如下：\n\n"
-        f"{source_content[:600]}\n\n"
-        f"[Source 1]\n\n"
-        f"当前回答由 {model_name} 生成。"
+    config = ChatConfig(
+        provider=provider,
+        model_name=model_name,
+        base_url=base_url,
+        api_key=api_key,
+        timeout_seconds=timeout_seconds,
+        temperature=temperature,
+        max_tokens=max_tokens,
     )
+
+    client = ChatClient(config=config)
+
+    return client.generate(messages)

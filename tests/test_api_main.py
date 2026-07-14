@@ -33,7 +33,7 @@ def test_get_version():
     assert data["success"] is True
     assert data["data"]["service"] == "codedoc-agent"
     assert data["data"]["version"] == "0.1.0"
-    assert data["data"]["stage"] == "day21-rag-ask"
+    assert data["data"]["stage"] == "day22-real-chat-adapter"
 
 
 def test_get_config():
@@ -54,3 +54,8 @@ def test_get_config():
     assert config["default_chunk_size"] > 0
     assert config["default_chunk_overlap"] >= 0
     assert config["default_model_name"] == "mock-model"
+    assert config["default_chat_provider"] == "mock"
+    assert config["default_chat_model"] == "mock-chat-model"
+    assert config["default_chat_timeout_seconds"] > 0
+    assert config["default_chat_max_tokens"] > 0
+    assert "default_chat_api_key" not in config

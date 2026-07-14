@@ -50,4 +50,6 @@ def test_http_status_to_error_code():
     assert http_status_to_error_code(404) == "NOT_FOUND"
     assert http_status_to_error_code(422) == "VALIDATION_ERROR"
     assert http_status_to_error_code(500) == "INTERNAL_SERVER_ERROR"
+    assert http_status_to_error_code(502) == "MODEL_SERVICE_ERROR"
+    assert http_status_to_error_code(504) == "MODEL_SERVICE_TIMEOUT"
     assert http_status_to_error_code(401) == "HTTP_ERROR"
