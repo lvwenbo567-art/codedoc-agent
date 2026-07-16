@@ -1,14 +1,17 @@
-import argparse
+import argparse#argparse 是 Python 自带的命令行参数解析工具。
 
 from logger import setup_logger
 from search_service import search_chunks_from_json
 
 def main()->None:
+    """
+    命令行入口：从 chunks.json 中执行关键词检索并打印结果。
+    """
     logger=setup_logger()
     logger.info("开始运行 chunks 检索 CLI")
     
     parser=argparse.ArgumentParser(description="从 chunks.json 中检索相关 chunks")
-
+    #ArgumentParser 表示创建一个命令行参数解析器
     parser.add_argument(
         "--chunks_path",
         default="outputs/chunks.json",
@@ -27,7 +30,7 @@ def main()->None:
         default=5,
         help="返回的检索结果数量",
     )
-    args=parser.parse_args()
+    args=parser.parse_args()#会读取用户在终端输入的参数
 
     logger.info(
         "检索参数解析完成，chunks_path=%s, query=%s, top_k=%s",

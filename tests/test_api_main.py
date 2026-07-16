@@ -33,7 +33,7 @@ def test_get_version():
     assert data["success"] is True
     assert data["data"]["service"] == "codedoc-agent"
     assert data["data"]["version"] == "0.1.0"
-    assert data["data"]["stage"] == "day22-real-chat-adapter"
+    assert data["data"]["stage"] == "day24-embedding-batch-retry"
 
 
 def test_get_config():
@@ -59,3 +59,9 @@ def test_get_config():
     assert config["default_chat_timeout_seconds"] > 0
     assert config["default_chat_max_tokens"] > 0
     assert "default_chat_api_key" not in config
+    assert config["default_embedding_provider"] == "mock"
+    assert config["default_embedding_model"] == "mock-hash-embedding"
+    assert config["default_embedding_timeout_seconds"] > 0
+    assert config["default_embedding_batch_size"] > 0
+    assert config["default_embedding_max_retries"] >= 0
+    assert config["default_embedding_retry_backoff_seconds"] >= 0

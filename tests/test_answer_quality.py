@@ -46,7 +46,7 @@ def test_evaluate_answer_quality_detects_missing_citation_marker():
     assert result["has_citations"] is False
     assert result["used_citation_ids"] == []
     assert result["valid_citation_rate"] == 0.0
-    assert result["warnings"] == ["answer does not use any citation markers"]
+    assert result["warnings"] == ["回答没有使用任何引用标记"]
 
 
 def test_evaluate_answer_quality_detects_invalid_source():
@@ -69,7 +69,7 @@ def test_evaluate_answer_quality_handles_no_citations():
 
     assert result["is_valid"] is True
     assert result["has_citations"] is False
-    assert result["warnings"] == ["no retrieved citations are available"]
+    assert result["warnings"] == ["当前没有可用的检索引用"]
 
 
 def test_evaluate_answer_quality_rejects_empty_answer():

@@ -39,12 +39,15 @@ def test_build_vector_records_preserves_metadata():
     chunks = build_test_chunks()
     client = EmbeddingClient(dimension=32)
 
-    records = build_vector_records(
+    records, stats = build_vector_records(
         chunks=chunks,
         embedding_client=client,
     )
 
     assert len(records) == 2
+    assert stats["chunk_count"] == 2
+    assert stats["vector_count"] == 2
+    assert stats["batch_count"] == 1
     assert records[0]["chunk_id"] == "main.py::chunk_0"
     assert records[0]["source_path"] == "main.py"
     assert records[0]["source_name"] == "main.py"
@@ -60,13 +63,14 @@ def test_build_vector_records_normalizes_embeddings():
     chunks = build_test_chunks()
     client = EmbeddingClient(dimension=32)
 
-    records = build_vector_records(
+    records, stats = build_vector_records(
         chunks=chunks,
         embedding_client=client,
     )
 
     norm = math.sqrt(sum(value * value for value in records[0]["embedding"]))
 
+    assert stats["duration_ms"] >= 0
     assert abs(norm - 1.0) < 1e-6
 
 
@@ -94,6 +98,9 @@ def test_build_vector_index_from_json(tmp_path):
     assert result["dimension"] == 32
     assert result["chunk_count"] == 2
     assert result["vector_count"] == 2
+    assert result["build_stats"]["chunk_count"] == 2
+    assert result["build_stats"]["vector_count"] == 2
+    assert result["index_metadata"]["build_stats"]["batch_count"] == 1
 
     records = load_vector_index(str(output_path))
 

@@ -21,10 +21,10 @@ def build_context(
     max_context_chars: int = DEFAULT_MAX_CONTEXT_CHARS,
 ) -> str:
     """
-    Build numbered source context from retrieved chunks.
+    将检索到的 chunks 组装成带 Source 编号的上下文。
     """
     if max_context_chars <= 0:
-        raise ValueError("max_context_chars must be greater than 0")
+        raise ValueError("max_context_chars 必须大于 0")
 
     blocks = []
     current_length = 0
@@ -63,10 +63,10 @@ def build_rag_user_prompt(
     max_context_chars: int = DEFAULT_MAX_CONTEXT_CHARS,
 ) -> str:
     """
-    Build the user message for a RAG answer.
+    构建 RAG 问答的 user prompt。
     """
     if not query or not query.strip():
-        raise ValueError("query cannot be empty")
+        raise ValueError("query 不能为空")
 
     context = build_context(
         retrieved_chunks=retrieved_chunks,
@@ -93,7 +93,7 @@ def build_rag_messages(
     max_context_chars: int = DEFAULT_MAX_CONTEXT_CHARS,
 ) -> List[Dict[str, str]]:
     """
-    Build standard chat messages for a RAG answer.
+    构建标准 Chat messages，供 ChatClient 调用。
     """
     user_prompt = build_rag_user_prompt(
         query=query,
@@ -119,7 +119,7 @@ def build_rag_prompt(
     max_context_chars: int = DEFAULT_MAX_CONTEXT_CHARS,
 ) -> str:
     """
-    Keep the old string prompt API for compatibility.
+    保留旧版字符串 prompt 接口，兼容早期测试和调用方式。
     """
     messages = build_rag_messages(
         query=query,

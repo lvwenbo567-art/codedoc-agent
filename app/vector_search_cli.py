@@ -5,6 +5,9 @@ from vector_search_service import search_vector_index_from_file
 
 
 def main() -> None:
+    """
+    命令行入口：从向量索引中执行 Top-K 检索并打印结果。
+    """
     logger = setup_logger()
     logger.info("开始运行向量检索 CLI")
 

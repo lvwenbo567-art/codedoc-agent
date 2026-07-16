@@ -201,7 +201,7 @@ def test_openai_compatible_includes_error_response_body():
     with pytest.raises(RuntimeError) as exc_info:
         client.generate(build_messages())
 
-    assert "status code: 502" in str(exc_info.value)
+    assert "状态码：502" in str(exc_info.value)
     assert "model runner failed" in str(exc_info.value)
 
     http_client.close()

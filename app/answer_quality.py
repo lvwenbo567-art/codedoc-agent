@@ -10,10 +10,10 @@ def evaluate_answer_quality(
     citations: List[Dict],
 ) -> Dict:
     """
-    Check whether source references used by the answer are valid.
+    检查回答中使用的 Source 引用是否真实存在。
     """
     if not answer or not answer.strip():
-        raise ValueError("answer cannot be empty")
+        raise ValueError("answer 不能为空")
 
     valid_citation_ids = {
         citation["citation_id"]
@@ -33,13 +33,13 @@ def evaluate_answer_quality(
     warnings = []
 
     if citations and not used_citation_ids:
-        warnings.append("answer does not use any citation markers")
+        warnings.append("回答没有使用任何引用标记")
 
     if invalid_ids:
-        warnings.append("answer cites sources that do not exist")
+        warnings.append("回答引用了不存在的来源")
 
     if not citations:
-        warnings.append("no retrieved citations are available")
+        warnings.append("当前没有可用的检索引用")
 
     used_count = len(used_citation_ids)
 

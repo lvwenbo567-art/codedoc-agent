@@ -16,6 +16,9 @@ class ProjectFile:
     length: int
 
     def to_dict(self) -> Dict[str, Any]:
+        """
+        将项目文件对象转换为普通字典，方便 JSON 序列化和后续处理。
+        """
         return asdict(self)
     
 @dataclass
@@ -36,4 +39,7 @@ class Chunk:
     length: int
 
     def to_dict(self) -> Dict[str, Any]:
+        """
+        将 chunk 对象转换为普通字典，方便保存和检索。
+        """
         return asdict(self)

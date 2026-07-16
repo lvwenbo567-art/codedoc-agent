@@ -17,7 +17,7 @@ from config import (
 @dataclass(frozen=True)
 class ChatConfig:
     """
-    Chat model call configuration.
+    Chat 模型调用配置。
     """
 
     provider: str = DEFAULT_CHAT_PROVIDER
@@ -30,32 +30,32 @@ class ChatConfig:
 
     def validate(self) -> None:
         """
-        Validate chat configuration before sending a request.
+        在发送请求前校验 Chat 配置是否合法。
         """
         if self.provider not in {"mock", "openai_compatible"}:
-            raise ValueError(f"unsupported chat provider: {self.provider}")
+            raise ValueError(f"不支持的 Chat Provider：{self.provider}")
 
         if not self.model_name.strip():
-            raise ValueError("model_name cannot be empty")
+            raise ValueError("model_name 不能为空")
 
         if self.timeout_seconds <= 0:
-            raise ValueError("timeout_seconds must be greater than 0")
+            raise ValueError("timeout_seconds 必须大于 0")
 
         if not 0 <= self.temperature <= 2:
-            raise ValueError("temperature must be between 0 and 2")
+            raise ValueError("temperature 必须在 0 到 2 之间")
 
         if self.max_tokens <= 0:
-            raise ValueError("max_tokens must be greater than 0")
+            raise ValueError("max_tokens 必须大于 0")
 
         if self.provider == "openai_compatible" and not self.base_url.strip():
-            raise ValueError("openai_compatible provider requires base_url")
+            raise ValueError("openai_compatible Provider 必须配置 base_url")
 
 
 class ChatClient:
     """
-    Chat model client.
+    Chat 模型客户端。
 
-    Supported providers:
+    支持：
     1. mock
     2. openai_compatible
     """
@@ -65,6 +65,9 @@ class ChatClient:
         config: ChatConfig,
         http_client: Optional[httpx.Client] = None,
     ):
+        """
+        初始化 Chat 客户端，并允许测试时注入 httpx.Client。
+        """
         config.validate()
 
         self.config = config
@@ -75,7 +78,7 @@ class ChatClient:
         messages: List[Dict[str, str]],
     ) -> str:
         """
-        Generate an answer from chat messages.
+        根据 messages 生成模型回答。
         """
         self._validate_messages(messages)
 
@@ -89,10 +92,10 @@ class ChatClient:
         messages: List[Dict[str, str]],
     ) -> None:
         """
-        Validate chat messages.
+        校验 Chat messages 是否符合 role/content 基本结构。
         """
         if not messages:
-            raise ValueError("messages cannot be empty")
+            raise ValueError("messages 不能为空")
 
         valid_roles = {"system", "user", "assistant"}
 
@@ -101,20 +104,20 @@ class ChatClient:
             content = message.get("content")
 
             if role not in valid_roles:
-                raise ValueError(f"unsupported message role: {role}")
+                raise ValueError(f"不支持的 message role：{role}")
 
             if not isinstance(content, str):
-                raise ValueError("message content must be a string")
+                raise ValueError("message content 必须是字符串")
 
             if not content.strip():
-                raise ValueError("message content cannot be empty")
+                raise ValueError("message content 不能为空")
 
     def _generate_mock(
         self,
         messages: List[Dict[str, str]],
     ) -> str:
         """
-        Generate a deterministic mock answer for local tests.
+        生成确定性的 Mock 回答，便于本地测试完整 RAG 链路。
         """
         user_message = messages[-1]["content"]
 
@@ -133,7 +136,7 @@ class ChatClient:
         messages: List[Dict[str, str]],
     ) -> str:
         """
-        Call an OpenAI-compatible /chat/completions endpoint.
+        调用 OpenAI-compatible /chat/completions 接口生成回答。
         """
         url = f"{self.config.base_url.rstrip('/')}/chat/completions"
 
@@ -168,11 +171,11 @@ class ChatClient:
             data = response.json()
 
         except httpx.TimeoutException as exc:
-            raise TimeoutError("chat model request timed out") from exc
+            raise TimeoutError("Chat 模型请求超时") from exc
 
         except httpx.RequestError as exc:
             raise ConnectionError(
-                f"cannot connect to chat model service: {exc}"
+                f"无法连接 Chat 模型服务：{exc}"
             ) from exc
 
         except httpx.HTTPStatusError as exc:
@@ -181,9 +184,9 @@ class ChatClient:
             if len(response_text) > 500:
                 response_text = response_text[:500] + "..."
 
-            detail = f"chat model service returned status code: {status_code}"
+            detail = f"Chat 模型服务返回状态码：{status_code}"
             if response_text:
-                detail = f"{detail}; response body: {response_text}"
+                detail = f"{detail}；响应内容：{response_text}"
 
             raise RuntimeError(
                 detail
@@ -196,13 +199,13 @@ class ChatClient:
         try:
             answer = data["choices"][0]["message"]["content"]
         except (KeyError, IndexError, TypeError) as exc:
-            raise ValueError("chat model response schema is invalid") from exc
+            raise ValueError("Chat 模型返回结构不符合预期") from exc
 
         if not isinstance(answer, str):
-            raise ValueError("chat model response content is not a string")
+            raise ValueError("Chat 模型返回内容不是字符串")
 
         if not answer.strip():
-            raise ValueError("chat model returned an empty answer")
+            raise ValueError("Chat 模型返回了空回答")
 
         return answer.strip()
 
@@ -218,7 +221,7 @@ def generate_chat_response(
     max_tokens: int = DEFAULT_CHAT_MAX_TOKENS,
 ) -> str:
     """
-    Unified chat model entrypoint for services.
+    服务层统一调用入口：创建 ChatClient 并生成回答。
     """
     config = ChatConfig(
         provider=provider,

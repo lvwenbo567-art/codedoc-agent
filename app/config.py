@@ -59,3 +59,72 @@ DEFAULT_CHAT_MAX_TOKENS = int(
         "800",
     )
 )
+DEFAULT_EMBEDDING_PROVIDER = os.getenv(
+    "CODEDOC_EMBEDDING_PROVIDER",
+    "mock",
+)
+
+DEFAULT_EMBEDDING_MODEL = os.getenv(
+    "CODEDOC_EMBEDDING_MODEL",
+    "mock-hash-embedding",
+)
+
+DEFAULT_EMBEDDING_BASE_URL = os.getenv(
+    "CODEDOC_EMBEDDING_BASE_URL",
+    "http://localhost:11434",
+)
+
+DEFAULT_EMBEDDING_API_KEY = os.getenv(
+    "CODEDOC_EMBEDDING_API_KEY",
+    "",
+)
+
+DEFAULT_EMBEDDING_TIMEOUT_SECONDS = float(
+    os.getenv(
+        "CODEDOC_EMBEDDING_TIMEOUT_SECONDS",
+        "30",
+    )
+)
+
+DEFAULT_EMBEDDING_DIMENSION = int(
+    os.getenv(
+        "CODEDOC_EMBEDDING_DIMENSION",
+        "64",
+    )
+)
+
+DEFAULT_NORMALIZE_EMBEDDING = (
+    os.getenv(
+        "CODEDOC_NORMALIZE_EMBEDDING",
+        "true",
+    ).lower()
+    == "true"
+)
+
+DEFAULT_VECTOR_INDEX_PATH = os.getenv(
+    "CODEDOC_VECTOR_INDEX_PATH",
+    "outputs/vector_index.json",
+)
+
+VECTOR_INDEX_FORMAT_VERSION = "1.0"
+
+DEFAULT_EMBEDDING_BATCH_SIZE = int(
+    os.getenv(
+        "CODEDOC_EMBEDDING_BATCH_SIZE",
+        "16",
+    )
+)
+
+DEFAULT_EMBEDDING_MAX_RETRIES = int(
+    os.getenv(
+        "CODEDOC_EMBEDDING_MAX_RETRIES",
+        "2",
+    )
+)
+
+DEFAULT_EMBEDDING_RETRY_BACKOFF_SECONDS = float(
+    os.getenv(
+        "CODEDOC_EMBEDDING_RETRY_BACKOFF_SECONDS",
+        "1",
+    )
+)

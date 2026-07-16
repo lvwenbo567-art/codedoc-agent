@@ -256,3 +256,53 @@
 - 新增 `POST /ask`
 - 新增 Prompt、引用、RAG Service 和 API 测试
 - 当前项目已经具备基础向量 RAG 问答能力
+
+### Day 22
+
+- 重构 `llm_client.py`
+- 新增 `ChatConfig` dataclass
+- 新增 `ChatClient`
+- 支持 `mock` 和 `openai_compatible` 两种 Chat Provider
+- 支持通过环境变量配置模型、Base URL 和 API Key
+- 支持调用 OpenAI-compatible `/chat/completions`
+- 增加模型请求超时、连接错误和返回结构校验
+- 修改 `prompt_builder.py`
+- 将 RAG Prompt 拆分为 System Message 和 User Message
+- 新增 `answer_quality.py`
+- 支持检查回答中的引用是否合法
+- 修改 `rag_service.py`
+- `/ask` 支持切换真实 Chat 模型
+- 修改 `api_schema.py`
+- 增加 Chat Provider、温度和最大输出长度参数
+- 修改 `api_response.py`
+- 增加模型服务 502 和 504 错误码
+- 新增 `.env.example`
+- 新增 Chat Client 和回答质量测试
+
+### Day 23
+
+- 重构 `embedding_client.py`
+- 新增 `EmbeddingConfig`
+- 支持 `mock`、`ollama` 和 `openai_compatible` 三种 Embedding Provider
+- 支持 Ollama `/api/embed`
+- 支持 OpenAI-compatible `/embeddings`
+- 向量索引新增 metadata 和格式版本
+- 记录 Embedding Provider、模型、维度、归一化方式和构建时间
+- 查询前校验索引与查询使用的 Provider、模型和维度是否一致
+- 新增 `embedding_probe.py`
+- 新增真实 Embedding 客户端和索引元数据测试
+
+### Day 24
+
+- 新增 `batch_utils.py`
+- 支持将 chunks 按 `batch_size` 分批向量化
+- `EmbeddingClient` 增加有限重试
+- 支持超时、连接失败、HTTP 429 和 5xx 的有限重试
+- 使用指数退避控制重试间隔
+- 记录 Embedding 请求次数和重试次数
+- 向量索引构建返回批次数、耗时和请求统计
+- 索引 metadata 保存 `build_stats`
+- 向量索引通过临时文件原子性替换
+- `/index` 支持配置 `batch_size`
+- 新增批处理、重试、建库统计和原子保存测试
+- 新增 Mock 与真实 Embedding 检索对比记录模板

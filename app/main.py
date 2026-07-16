@@ -25,6 +25,9 @@ def print_project_summary(
     query: str = "",
     top_k: int = 5,
 ) -> None:
+    """
+    读取项目文件、构建 chunks、可选检索，并在命令行打印项目摘要。
+    """
     logger = setup_logger()
 
     logger.info("开始读取项目文件: %s", project_path)
@@ -195,6 +198,9 @@ def print_project_summary(
 
 
 def main() -> None:
+    """
+    命令行入口：解析参数并执行项目扫描摘要流程。
+    """
     logger = setup_logger()
     logger.info("开始运行 CodeDoc Research Agent")
 

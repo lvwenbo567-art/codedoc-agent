@@ -20,6 +20,9 @@ def load_eval_queries(eval_path: str):
 
 
 def main() -> None:
+    """
+    命令行入口：读取评估集并输出检索指标。
+    """
     logger = setup_logger()
     logger.info("开始运行检索评估 CLI")
 
