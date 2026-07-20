@@ -10,7 +10,10 @@ from api_response import (
 from api_schema import (
     AskRequest,
     EvalRequest,
+    HybridSearchRequest,
     IndexRequest,
+    RerankEvalRequest,
+    RerankSearchRequest,
     ScanRequest,
     SearchRequest,
     VectorSearchRequest,
@@ -33,13 +36,23 @@ from config import (
     DEFAULT_EMBEDDING_PROVIDER,
     DEFAULT_EMBEDDING_TIMEOUT_SECONDS,
     DEFAULT_MODEL_NAME,
+    DEFAULT_RERANK_BATCH_SIZE,
+    DEFAULT_RERANK_CANDIDATE_TOP_K,
+    DEFAULT_RERANK_DEVICE,
+    DEFAULT_RERANK_FINAL_TOP_K,
+    DEFAULT_RERANK_MAX_LENGTH,
+    DEFAULT_RERANK_MODEL,
+    DEFAULT_RERANK_PROVIDER,
     SUPPORTED_SUFFIXES,
 )
 from eval_service import evaluate_retrieval_from_files
 from index_service import build_vector_index_from_json
+from hybrid_search_service import hybrid_search_from_files
 from logger import setup_logger
 from project_service import scan_project
 from rag_service import ask_from_vector_index
+from rerank_eval_service import compare_search_methods, load_eval_cases
+from retrieval_pipeline import retrieve_with_rerank
 from repository import (
     get_chunk_by_id,
     get_file_by_id,
@@ -124,7 +137,7 @@ def get_version() -> dict:
         data={
             "service": "codedoc-agent",
             "version": "0.1.0",
-            "stage": "day24-embedding-batch-retry",
+            "stage": "day28-rerank-stability-eval",
         }
     )
 
@@ -156,6 +169,13 @@ def get_config() -> dict:
             "default_embedding_batch_size": DEFAULT_EMBEDDING_BATCH_SIZE,
             "default_embedding_max_retries": DEFAULT_EMBEDDING_MAX_RETRIES,
             "default_embedding_retry_backoff_seconds": DEFAULT_EMBEDDING_RETRY_BACKOFF_SECONDS,
+            "default_rerank_provider": DEFAULT_RERANK_PROVIDER,
+            "default_rerank_model": DEFAULT_RERANK_MODEL,
+            "default_rerank_device": DEFAULT_RERANK_DEVICE,
+            "default_rerank_batch_size": DEFAULT_RERANK_BATCH_SIZE,
+            "default_rerank_candidate_top_k": DEFAULT_RERANK_CANDIDATE_TOP_K,
+            "default_rerank_final_top_k": DEFAULT_RERANK_FINAL_TOP_K,
+            "default_rerank_max_length": DEFAULT_RERANK_MAX_LENGTH,
         }
     )
 
@@ -453,6 +473,7 @@ def build_vector_index_api(request: IndexRequest) -> dict:
             timeout_seconds=request.embedding_timeout_seconds,
             mock_dimension=mock_dimension,
             batch_size=request.batch_size,
+            incremental=request.incremental,
         )
 
         return success_response(data=result)
@@ -518,6 +539,212 @@ def vector_search_api(request: VectorSearchRequest) -> dict:
         raise HTTPException(status_code=502, detail=str(e))
 
 
+@app.post("/hybrid_search")
+def hybrid_search_api(request: HybridSearchRequest) -> dict:
+    """
+    同时执行关键词检索和向量检索，并按权重融合两个通道的 Top-K 结果。
+    """
+    embedding_model = request.model_name or request.embedding_model
+    mock_dimension = (
+        request.dimension
+        if request.dimension is not None
+        else request.mock_dimension
+    )
+
+    logger.info(
+        "调用 /hybrid_search，query=%s, chunks_path=%s, index_path=%s",
+        request.query,
+        request.chunks_path,
+        request.index_path,
+    )
+
+    try:
+        result = hybrid_search_from_files(
+            query=request.query,
+            chunks_path=request.chunks_path,
+            index_path=request.index_path,
+            keyword_top_k=request.keyword_top_k,
+            vector_top_k=request.vector_top_k,
+            final_top_k=request.final_top_k,
+            keyword_weight=request.keyword_weight,
+            vector_weight=request.vector_weight,
+            embedding_provider=request.embedding_provider,
+            embedding_model=embedding_model,
+            embedding_base_url=request.embedding_base_url,
+            embedding_api_key=request.embedding_api_key,
+            embedding_timeout_seconds=request.embedding_timeout_seconds,
+            mock_dimension=mock_dimension,
+            chunk_type=request.chunk_type,
+        )
+
+        return success_response(data=result)
+
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    except TimeoutError as e:
+        raise HTTPException(status_code=504, detail=str(e))
+
+    except (ConnectionError, RuntimeError) as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.post("/rerank_search")
+def rerank_search_api(request: RerankSearchRequest) -> dict:
+    """
+    执行 Hybrid Search + Rerank，两阶段召回精排后返回 Top-K chunks。
+    """
+    embedding_model = request.model_name or request.embedding_model
+    mock_dimension = (
+        request.dimension
+        if request.dimension is not None
+        else request.mock_dimension
+    )
+
+    logger.info(
+        "调用 /rerank_search，query=%s, chunks_path=%s, index_path=%s",
+        request.query,
+        request.chunks_path,
+        request.index_path,
+    )
+
+    try:
+        result = retrieve_with_rerank(
+            query=request.query,
+            chunks_path=request.chunks_path,
+            index_path=request.index_path,
+            candidate_top_k=request.candidate_top_k,
+            final_top_k=request.final_top_k,
+            keyword_weight=request.keyword_weight,
+            vector_weight=request.vector_weight,
+            embedding_provider=request.embedding_provider,
+            embedding_model=embedding_model,
+            embedding_base_url=request.embedding_base_url,
+            embedding_api_key=request.embedding_api_key,
+            embedding_timeout_seconds=request.embedding_timeout_seconds,
+            mock_dimension=mock_dimension,
+            rerank_provider=request.rerank_provider,
+            rerank_model=request.rerank_model,
+            rerank_device=request.rerank_device,
+            rerank_batch_size=request.rerank_batch_size,
+            rerank_max_length=request.rerank_max_length,
+            rerank_local_files_only=request.rerank_local_files_only,
+            chunk_type=request.chunk_type,
+        )
+
+        return success_response(data=result)
+
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    except TimeoutError as e:
+        raise HTTPException(status_code=504, detail=str(e))
+
+    except (ConnectionError, RuntimeError) as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.post("/rerank_eval")
+def rerank_eval_api(request: RerankEvalRequest) -> dict:
+    """
+    对比 Hybrid Search 和 Hybrid + Rerank 的 Hit@K、MRR 与平均延迟。
+    """
+    embedding_model = request.model_name or request.embedding_model
+    mock_dimension = (
+        request.dimension
+        if request.dimension is not None
+        else request.mock_dimension
+    )
+
+    logger.info(
+        "调用 /rerank_eval，eval_path=%s, chunks_path=%s, index_path=%s",
+        request.eval_path,
+        request.chunks_path,
+        request.index_path,
+    )
+
+    try:
+        eval_cases = load_eval_cases(request.eval_path)
+
+        def run_hybrid(query: str) -> dict:
+            return hybrid_search_from_files(
+                query=query,
+                chunks_path=request.chunks_path,
+                index_path=request.index_path,
+                keyword_top_k=request.candidate_top_k,
+                vector_top_k=request.candidate_top_k,
+                final_top_k=request.final_top_k,
+                keyword_weight=request.keyword_weight,
+                vector_weight=request.vector_weight,
+                embedding_provider=request.embedding_provider,
+                embedding_model=embedding_model,
+                embedding_base_url=request.embedding_base_url,
+                embedding_api_key=request.embedding_api_key,
+                embedding_timeout_seconds=request.embedding_timeout_seconds,
+                mock_dimension=mock_dimension,
+                chunk_type=request.chunk_type,
+            )
+
+        def run_rerank(query: str) -> dict:
+            return retrieve_with_rerank(
+                query=query,
+                chunks_path=request.chunks_path,
+                index_path=request.index_path,
+                candidate_top_k=request.candidate_top_k,
+                final_top_k=request.final_top_k,
+                keyword_weight=request.keyword_weight,
+                vector_weight=request.vector_weight,
+                embedding_provider=request.embedding_provider,
+                embedding_model=embedding_model,
+                embedding_base_url=request.embedding_base_url,
+                embedding_api_key=request.embedding_api_key,
+                embedding_timeout_seconds=request.embedding_timeout_seconds,
+                mock_dimension=mock_dimension,
+                rerank_provider=request.rerank_provider,
+                rerank_model=request.rerank_model,
+                rerank_device=request.rerank_device,
+                rerank_batch_size=request.rerank_batch_size,
+                rerank_max_length=request.rerank_max_length,
+                rerank_local_files_only=request.rerank_local_files_only,
+                chunk_type=request.chunk_type,
+            )
+
+        result = compare_search_methods(
+            eval_cases=eval_cases,
+            hybrid_search_function=run_hybrid,
+            rerank_search_function=run_rerank,
+        )
+
+        return success_response(
+            data={
+                "eval_path": request.eval_path,
+                "chunks_path": request.chunks_path,
+                "index_path": request.index_path,
+                "candidate_top_k": request.candidate_top_k,
+                "final_top_k": request.final_top_k,
+                **result,
+            }
+        )
+
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    except TimeoutError as e:
+        raise HTTPException(status_code=504, detail=str(e))
+
+    except (ConnectionError, RuntimeError) as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
 @app.post("/ask")
 def ask_api(request: AskRequest) -> dict:
     """
@@ -540,8 +767,13 @@ def ask_api(request: AskRequest) -> dict:
     try:
         result = ask_from_vector_index(
             query=request.query,
+            retrieval_mode=request.retrieval_mode,
+            chunks_path=request.chunks_path,
             index_path=request.index_path,
             top_k=request.top_k,
+            candidate_top_k=request.candidate_top_k,
+            keyword_weight=request.keyword_weight,
+            vector_weight=request.vector_weight,
             embedding_provider=request.embedding_provider,
             embedding_model=embedding_model,
             embedding_base_url=request.embedding_base_url,
@@ -555,6 +787,12 @@ def ask_api(request: AskRequest) -> dict:
             chat_timeout_seconds=request.chat_timeout_seconds,
             temperature=request.temperature,
             max_tokens=request.max_tokens,
+            rerank_provider=request.rerank_provider,
+            rerank_model=request.rerank_model,
+            rerank_device=request.rerank_device,
+            rerank_batch_size=request.rerank_batch_size,
+            rerank_max_length=request.rerank_max_length,
+            rerank_local_files_only=request.rerank_local_files_only,
             chunk_type=request.chunk_type,
             max_context_chars=request.max_context_chars,
         )

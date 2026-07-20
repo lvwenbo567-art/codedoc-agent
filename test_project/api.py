@@ -15,7 +15,14 @@ def health_check() -> dict:
         "status": "ok",
         "service": "test-project",
     }
-
+def get_project_info() -> dict:
+    """
+    返回测试项目的基础信息。
+    """
+    return {
+        "name": "test-project",
+        "version": "0.1.0",
+    }
 
 def create_document_api(document_id: str, content: str) -> dict:
     """

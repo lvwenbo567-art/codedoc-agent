@@ -18,10 +18,19 @@ from config import (
     DEFAULT_EMBEDDING_TIMEOUT_SECONDS,
     DEFAULT_MAX_CONTEXT_CHARS,
     DEFAULT_RAG_TOP_K,
+    DEFAULT_RERANK_BATCH_SIZE,
+    DEFAULT_RERANK_CANDIDATE_TOP_K,
+    DEFAULT_RERANK_DEVICE,
+    DEFAULT_RERANK_LOCAL_FILES_ONLY,
+    DEFAULT_RERANK_MAX_LENGTH,
+    DEFAULT_RERANK_MODEL,
+    DEFAULT_RERANK_PROVIDER,
     DEFAULT_VECTOR_INDEX_PATH,
 )
+from hybrid_search_service import hybrid_search_from_files
 from llm_client import generate_chat_response
 from prompt_builder import build_rag_messages
+from retrieval_pipeline import retrieve_with_rerank
 from vector_search_service import (
     search_vector_index_from_file,
 )
@@ -29,8 +38,13 @@ from vector_search_service import (
 
 def ask_from_vector_index(
     query: str,
+    retrieval_mode: str = "vector",
+    chunks_path: str = "outputs/chunks.json",
     index_path: str = DEFAULT_VECTOR_INDEX_PATH,
     top_k: int = DEFAULT_RAG_TOP_K,
+    candidate_top_k: int = DEFAULT_RERANK_CANDIDATE_TOP_K,
+    keyword_weight: float = 0.4,
+    vector_weight: float = 0.6,
     embedding_provider: str = DEFAULT_EMBEDDING_PROVIDER,
     embedding_model: str = DEFAULT_EMBEDDING_MODEL,
     embedding_base_url: str = DEFAULT_EMBEDDING_BASE_URL,
@@ -46,6 +60,12 @@ def ask_from_vector_index(
     ),
     temperature: float = DEFAULT_CHAT_TEMPERATURE,
     max_tokens: int = DEFAULT_CHAT_MAX_TOKENS,
+    rerank_provider: str = DEFAULT_RERANK_PROVIDER,
+    rerank_model: str = DEFAULT_RERANK_MODEL,
+    rerank_device: str = DEFAULT_RERANK_DEVICE,
+    rerank_batch_size: int = DEFAULT_RERANK_BATCH_SIZE,
+    rerank_max_length: int = DEFAULT_RERANK_MAX_LENGTH,
+    rerank_local_files_only: bool = DEFAULT_RERANK_LOCAL_FILES_ONLY,
     chunk_type: Optional[str] = None,
     max_context_chars: int = DEFAULT_MAX_CONTEXT_CHARS,
     dimension: Optional[int] = None,
@@ -56,8 +76,51 @@ def ask_from_vector_index(
     if dimension is not None:
         mock_dimension = dimension
 
-    retrieval_result = (
-        search_vector_index_from_file(
+    if retrieval_mode == "rerank":
+        retrieval_result = retrieve_with_rerank(
+            query=query,
+            chunks_path=chunks_path,
+            index_path=index_path,
+            candidate_top_k=candidate_top_k,
+            final_top_k=top_k,
+            keyword_weight=keyword_weight,
+            vector_weight=vector_weight,
+            embedding_provider=embedding_provider,
+            embedding_model=embedding_model,
+            embedding_base_url=embedding_base_url,
+            embedding_api_key=embedding_api_key,
+            embedding_timeout_seconds=embedding_timeout_seconds,
+            mock_dimension=mock_dimension,
+            rerank_provider=rerank_provider,
+            rerank_model=rerank_model,
+            rerank_device=rerank_device,
+            rerank_batch_size=rerank_batch_size,
+            rerank_max_length=rerank_max_length,
+            rerank_local_files_only=rerank_local_files_only,
+            chunk_type=chunk_type,
+        )
+
+    elif retrieval_mode == "hybrid":
+        retrieval_result = hybrid_search_from_files(
+            query=query,
+            chunks_path=chunks_path,
+            index_path=index_path,
+            keyword_top_k=candidate_top_k,
+            vector_top_k=candidate_top_k,
+            final_top_k=top_k,
+            keyword_weight=keyword_weight,
+            vector_weight=vector_weight,
+            embedding_provider=embedding_provider,
+            embedding_model=embedding_model,
+            embedding_base_url=embedding_base_url,
+            embedding_api_key=embedding_api_key,
+            embedding_timeout_seconds=embedding_timeout_seconds,
+            mock_dimension=mock_dimension,
+            chunk_type=chunk_type,
+        )
+
+    elif retrieval_mode == "vector":
+        retrieval_result = search_vector_index_from_file(
             query=query,
             index_path=index_path,
             top_k=top_k,
@@ -70,7 +133,9 @@ def ask_from_vector_index(
             chunk_type=chunk_type,
             include_content=True,
         )
-    )
+
+    else:
+        raise ValueError(f"不支持的 retrieval_mode：{retrieval_mode}")
 
     retrieved_chunks = retrieval_result[
         "results"
@@ -109,8 +174,10 @@ def ask_from_vector_index(
         "chat_model": chat_model,
         "embedding_provider": embedding_provider,
         "embedding_model": embedding_model,
-        "dimension": retrieval_result["dimension"],
+        "dimension": retrieval_result.get("dimension"),
+        "retrieval_mode": retrieval_mode,
         "top_k": top_k,
+        "candidate_top_k": candidate_top_k,
         "chunk_type": chunk_type,
         "retrieval_count": len(
             retrieved_chunks

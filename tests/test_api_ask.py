@@ -6,7 +6,9 @@ from fastapi.testclient import TestClient
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
 from api_main import app
+from chunk_storage import save_chunks_to_json
 from embedding_client import EmbeddingClient
+from index_service import build_vector_index_from_json
 from vector_store import save_vector_index
 
 
@@ -207,3 +209,66 @@ def test_ask_api_invalid_max_context_chars(tmp_path):
 
     assert data["success"] is False
     assert data["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_ask_api_supports_rerank_retrieval_mode(tmp_path):
+    chunks_path = tmp_path / "chunks.json"
+    index_path = tmp_path / "vector_index.json"
+    chunks = [
+        {
+            "chunk_id": "database.py::chunk_0",
+            "source_path": "database.py",
+            "source_name": "database.py",
+            "source_suffix": ".py",
+            "chunk_type": "code",
+            "chunk_index": 0,
+            "content": "SQLite 保存 projects files chunks 表。",
+            "length": 33,
+        },
+        {
+            "chunk_id": "embedding.py::chunk_0",
+            "source_path": "embedding.py",
+            "source_name": "embedding.py",
+            "source_suffix": ".py",
+            "chunk_type": "code",
+            "chunk_index": 0,
+            "content": "EmbeddingClient 负责生成向量。",
+            "length": 27,
+        },
+    ]
+
+    save_chunks_to_json(chunks, str(chunks_path))
+    build_vector_index_from_json(
+        chunks_path=str(chunks_path),
+        output_path=str(index_path),
+        embedding_provider="mock",
+        embedding_model="test-embedding",
+        mock_dimension=32,
+        incremental=False,
+    )
+
+    response = client.post(
+        "/ask",
+        json={
+            "query": "EmbeddingClient",
+            "retrieval_mode": "rerank",
+            "chunks_path": str(chunks_path),
+            "index_path": str(index_path),
+            "top_k": 1,
+            "candidate_top_k": 2,
+            "embedding_provider": "mock",
+            "embedding_model": "test-embedding",
+            "mock_dimension": 32,
+            "chat_model": "test-chat",
+            "rerank_provider": "mock",
+            "rerank_model": "mock",
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()["data"]
+
+    assert data["retrieval_mode"] == "rerank"
+    assert data["retrieval_count"] == 1
+    assert data["citations"][0]["source_path"] == "embedding.py"

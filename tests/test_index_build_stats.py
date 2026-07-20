@@ -89,3 +89,60 @@ def test_save_vector_index_replaces_temp_file(tmp_path):
 
     assert output_path.exists()
     assert not temp_path.exists()
+
+
+def test_build_vector_index_reuses_unchanged_records(tmp_path):
+    chunks_path = tmp_path / "chunks.json"
+    output_path = tmp_path / "vector_index.json"
+
+    save_chunks_to_json(
+        chunks=build_chunks(3),
+        output_path=str(chunks_path),
+    )
+
+    first_result = build_vector_index_from_json(
+        chunks_path=str(chunks_path),
+        output_path=str(output_path),
+        dimension=16,
+        batch_size=2,
+    )
+    second_result = build_vector_index_from_json(
+        chunks_path=str(chunks_path),
+        output_path=str(output_path),
+        dimension=16,
+        batch_size=2,
+    )
+
+    assert first_result["update_stats"]["new_count"] == 3
+    assert second_result["update_stats"]["new_count"] == 0
+    assert second_result["update_stats"]["updated_count"] == 0
+    assert second_result["update_stats"]["reused_count"] == 3
+    assert second_result["update_stats"]["unique_embedding_count"] == 0
+
+
+def test_build_vector_index_can_disable_incremental(tmp_path):
+    chunks_path = tmp_path / "chunks.json"
+    output_path = tmp_path / "vector_index.json"
+
+    save_chunks_to_json(
+        chunks=build_chunks(2),
+        output_path=str(chunks_path),
+    )
+
+    build_vector_index_from_json(
+        chunks_path=str(chunks_path),
+        output_path=str(output_path),
+        dimension=16,
+        batch_size=2,
+    )
+    result = build_vector_index_from_json(
+        chunks_path=str(chunks_path),
+        output_path=str(output_path),
+        dimension=16,
+        batch_size=2,
+        incremental=False,
+    )
+
+    assert result["incremental"] is False
+    assert result["update_stats"]["old_record_count"] == 0
+    assert result["update_stats"]["new_count"] == 2

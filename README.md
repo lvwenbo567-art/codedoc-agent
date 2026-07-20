@@ -306,3 +306,88 @@
 - `/index` 支持配置 `batch_size`
 - 新增批处理、重试、建库统计和原子保存测试
 - 新增 Mock 与真实 Embedding 检索对比记录模板
+
+### Day 25
+
+- 新增 `content_hash.py`
+- 使用 SHA-256 计算 chunk 内容哈希
+- 向量记录增加 `content_hash`
+- 新增 `index_update_service.py`
+- 支持增量构建向量索引
+- 未变化 chunk 直接复用旧 embedding
+- 新增和修改 chunk 重新向量化
+- 删除的 chunk 不再写入新索引
+- 相同内容只调用一次 Embedding
+- 保留重复内容对应的独立 metadata
+- 增加新增、修改、删除、复用和去重统计
+- 修改 `batch_utils.py`
+- 新增基于 `yield` 的 `iter_batches()`
+- `/index` 新增 `incremental` 参数
+- 增加内容哈希、生成器批次和增量索引测试
+
+### Day 26
+
+- 新增 `hybrid_search_service.py`
+- 支持关键词检索和向量检索的混合召回
+- 支持对两个检索通道的分数做 Min-Max 归一化
+- 支持通过 `keyword_weight` 和 `vector_weight` 调整融合权重
+- 支持按 `chunk_id` 去重，同一个 chunk 可同时标记为 keyword/vector 命中
+- 支持返回 `keyword_score`、`vector_score`、`final_score` 和 `matched_by`
+- 修改 `api_schema.py`
+- 新增 `HybridSearchRequest`
+- 修改 `api_main.py`
+- 新增 `POST /hybrid_search`
+- `/version` 阶段更新为 `day26-hybrid-search`
+- 新增混合检索 service 和 API 测试
+- 新增 `python_practice/processor.py`
+- 新增 `python_practice/file_utils.py`
+- 新增 `python_practice/chunk_utils.py`
+- 补充 Day26 Python 专项 pytest，用于练习文本处理、JSON 读写、环境变量覆盖、chunk 过滤和生成器分批
+
+### Day 27
+
+- 新增 `rerank_client.py`
+- 支持 Mock Reranker，用于单元测试和流程打通
+- 支持 Sentence Transformers CrossEncoder Provider
+- 支持通过本地路径加载离线 Rerank 模型
+- 新增 `rerank_service.py`
+- 支持对 Hybrid Search 候选结果进行精排
+- 保留召回阶段排名 `retrieval_rank` 和精排分数 `rerank_score`
+- 新增 `retrieval_pipeline.py`
+- 实现 Hybrid Search Top-K → Rerank Top-K
+- 新增 `rerank_probe.py`
+- 支持命令行测试真实 CrossEncoder 模型
+- 修改 `api_schema.py`
+- 新增 `RerankSearchRequest`
+- 修改 `api_main.py`
+- 新增 `POST /rerank_search`
+- `/version` 阶段更新为 `day27-rerank`
+- `/ask` 支持 `vector`、`hybrid` 和 `rerank` 三种检索模式
+- 新增 Rerank Client、Service、Pipeline 和 API 测试
+- 新增 `docs/day27_rerank_comparison.md`
+- 新增 SQL 专项目录 `sql_practice`
+- 完成 12 条以上 SQL 查询、参数化 SQLite 查询和专项测试
+
+### Day 28
+
+- 修改 `rerank_client.py`
+- 新增 `RerankServiceError`
+- 真实 CrossEncoder 加载失败和推理失败会包装为明确的 Rerank 服务异常
+- 修改 `retrieval_pipeline.py`
+- Rerank 服务异常时自动降级为 Hybrid Search
+- 新增 `rerank_applied`、`degraded`、`degrade_reason` 和 `rerank_duration_ms`
+- 只捕获 `RerankServiceError`，不会吞掉参数错误和数据结构错误
+- 新增 `retrieval_metrics.py`
+- 支持计算 Hit@K 和 MRR
+- 新增 `rerank_eval_service.py`
+- 支持对比 Hybrid Search 与 Hybrid + Rerank 的检索指标
+- 新增 `data/rerank_eval_queries.json`
+- 建立 10 条本地小型 Rerank 评测集
+- 修改 `api_schema.py` 和 `api_main.py`
+- 新增 `POST /rerank_eval`
+- `/version` 阶段更新为 `day28-rerank-stability-eval`
+- 新增 Rerank 降级、检索指标、评估服务和 API 测试
+- 新增 `docs/day28_rerank_evaluation.md`
+- 新增 SQL 专项 `day28_group_join.sql`
+- 新增 `day28_report_repository.py`
+- 支持 GROUP BY、HAVING、INNER JOIN、LEFT JOIN 和聚合统计测试

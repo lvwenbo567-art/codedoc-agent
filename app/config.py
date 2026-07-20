@@ -128,3 +128,54 @@ DEFAULT_EMBEDDING_RETRY_BACKOFF_SECONDS = float(
         "1",
     )
 )
+
+DEFAULT_RERANK_PROVIDER = os.getenv(
+    "CODEDOC_RERANK_PROVIDER",
+    "mock",
+)
+
+DEFAULT_RERANK_MODEL = os.getenv(
+    "CODEDOC_RERANK_MODEL",
+    "mock-reranker",
+)
+
+DEFAULT_RERANK_DEVICE = os.getenv(
+    "CODEDOC_RERANK_DEVICE",
+    "cpu",
+)
+
+DEFAULT_RERANK_BATCH_SIZE = int(
+    os.getenv(
+        "CODEDOC_RERANK_BATCH_SIZE",
+        "8",
+    )
+)
+
+DEFAULT_RERANK_CANDIDATE_TOP_K = int(
+    os.getenv(
+        "CODEDOC_RERANK_CANDIDATE_TOP_K",
+        "20",
+    )
+)
+
+DEFAULT_RERANK_FINAL_TOP_K = int(
+    os.getenv(
+        "CODEDOC_RERANK_FINAL_TOP_K",
+        "5",
+    )
+)
+
+DEFAULT_RERANK_MAX_LENGTH = int(
+    os.getenv(
+        "CODEDOC_RERANK_MAX_LENGTH",
+        "512",
+    )
+)
+
+DEFAULT_RERANK_LOCAL_FILES_ONLY = (
+    os.getenv(
+        "CODEDOC_RERANK_LOCAL_FILES_ONLY",
+        "false",
+    ).lower()
+    == "true"
+)

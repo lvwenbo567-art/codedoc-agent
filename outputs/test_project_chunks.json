@@ -6,7 +6,7 @@
     "source_suffix": ".py",
     "chunk_type": "code",
     "chunk_index": 0,
-    "content": "\"\"\"\n测试项目 API 模块。\n\n这个文件模拟后端接口函数，方便测试“项目有哪些接口”和“如何查询 chunks”。\n\"\"\"\n\nfrom database import init_database, list_chunks, save_document\n\n\ndef health_check() -> dict:\n    \"\"\"\n    返回服务健康状态。\n    \"\"\"\n    return {\n        \"status\": \"ok\",\n        \"service\": \"test-project\",\n    }\n\n\ndef create_document_api(document_id: str, content: str) -> dict:\n    \"\"\"\n    模拟创建文档接口，内部调用 save_document。\n    \"\"\"\n    return save_document(\n        document_id=document_id,\n        content=content,\n    )\n\n\ndef list_chunks_api(docume",
+    "content": "\"\"\"\n测试项目 API 模块。\n\n这个文件模拟后端接口函数，方便测试“项目有哪些接口”和“如何查询 chunks”。\n\"\"\"\n\nfrom database import init_database, list_chunks, save_document\n\n\ndef health_check() -> dict:\n    \"\"\"\n    返回服务健康状态。\n    \"\"\"\n    return {\n        \"status\": \"ok\",\n        \"service\": \"test-project\",\n    }\ndef get_project_info() -> dict:\n    \"\"\"\n    返回测试项目的基础信息。\n    \"\"\"\n    return {\n        \"name\": \"test-project\",\n        \"version\": \"0.1.0\",\n    }\n\ndef create_document_api(document_id: str, content: str) -> dict:\n    \"\"\"\n    模拟创建文档接口，内部调",
     "length": 500
   },
   {
@@ -16,8 +16,18 @@
     "source_suffix": ".py",
     "chunk_type": "code",
     "chunk_index": 1,
-    "content": "cument(\n        document_id=document_id,\n        content=content,\n    )\n\n\ndef list_chunks_api(document_id: str) -> dict:\n    \"\"\"\n    模拟查询 chunks 接口，返回指定文档的 chunk 列表。\n    \"\"\"\n    return {\n        \"document_id\": document_id,\n        \"chunks\": list_chunks(document_id),\n    }\n\n\ndef startup() -> dict:\n    \"\"\"\n    启动 API 服务前初始化数据库。\n    \"\"\"\n    return init_database()",
-    "length": 362
+    "content": "0\",\n    }\n\ndef create_document_api(document_id: str, content: str) -> dict:\n    \"\"\"\n    模拟创建文档接口，内部调用 save_document。\n    \"\"\"\n    return save_document(\n        document_id=document_id,\n        content=content,\n    )\n\n\ndef list_chunks_api(document_id: str) -> dict:\n    \"\"\"\n    模拟查询 chunks 接口，返回指定文档的 chunk 列表。\n    \"\"\"\n    return {\n        \"document_id\": document_id,\n        \"chunks\": list_chunks(document_id),\n    }\n\n\ndef startup() -> dict:\n    \"\"\"\n    启动 API 服务前初始化数据库。\n    \"\"\"\n    return init_datab",
+    "length": 500
+  },
+  {
+    "chunk_id": "test_project\\api.py::chunk_2",
+    "source_path": "test_project\\api.py",
+    "source_name": "api.py",
+    "source_suffix": ".py",
+    "chunk_type": "code",
+    "chunk_index": 2,
+    "content": "ment_id),\n    }\n\n\ndef startup() -> dict:\n    \"\"\"\n    启动 API 服务前初始化数据库。\n    \"\"\"\n    return init_database()",
+    "length": 105
   },
   {
     "chunk_id": "test_project\\config.py::chunk_0",

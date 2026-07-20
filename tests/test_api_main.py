@@ -33,7 +33,7 @@ def test_get_version():
     assert data["success"] is True
     assert data["data"]["service"] == "codedoc-agent"
     assert data["data"]["version"] == "0.1.0"
-    assert data["data"]["stage"] == "day24-embedding-batch-retry"
+    assert data["data"]["stage"] == "day28-rerank-stability-eval"
 
 
 def test_get_config():
@@ -65,3 +65,6 @@ def test_get_config():
     assert config["default_embedding_batch_size"] > 0
     assert config["default_embedding_max_retries"] >= 0
     assert config["default_embedding_retry_backoff_seconds"] >= 0
+    assert config["default_rerank_provider"] == "mock"
+    assert config["default_rerank_model"] == "mock-reranker"
+    assert config["default_rerank_batch_size"] > 0

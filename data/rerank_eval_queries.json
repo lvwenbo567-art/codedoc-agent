@@ -1,0 +1,80 @@
+[
+  {
+    "query": "这个项目如何启动",
+    "expected_chunk_ids": [
+      "test_project\\README.md::chunk_0"
+    ],
+    "question_type": "startup"
+  },
+  {
+    "query": "如何查询 chunks",
+    "expected_chunk_ids": [
+      "test_project\\api.py::chunk_1",
+      "test_project\\database.py::chunk_1"
+    ],
+    "question_type": "chunk_query"
+  },
+  {
+    "query": "数据库有哪些表",
+    "expected_chunk_ids": [
+      "test_project\\database.py::chunk_0",
+      "test_project\\docs\\usage.md::chunk_0"
+    ],
+    "question_type": "database_schema"
+  },
+  {
+    "query": "如何进行关键词检索",
+    "expected_chunk_ids": [
+      "test_project\\search.py::chunk_0",
+      "test_project\\docs\\usage.md::chunk_1"
+    ],
+    "question_type": "keyword_search"
+  },
+  {
+    "query": "keyword_score 是怎么计算的",
+    "expected_chunk_ids": [
+      "test_project\\search.py::chunk_0"
+    ],
+    "question_type": "implementation"
+  },
+  {
+    "query": "API 健康检查接口返回什么",
+    "expected_chunk_ids": [
+      "test_project\\api.py::chunk_0",
+      "test_project\\tests\\test_calculator.md::chunk_0"
+    ],
+    "question_type": "api"
+  },
+  {
+    "query": "如何保存文档内容",
+    "expected_chunk_ids": [
+      "test_project\\database.py::chunk_1",
+      "test_project\\api.py::chunk_1"
+    ],
+    "question_type": "document_storage"
+  },
+  {
+    "query": "项目配置项在哪里",
+    "expected_chunk_ids": [
+      "test_project\\config.py::chunk_0",
+      "test_project\\config.py::chunk_1"
+    ],
+    "question_type": "configuration"
+  },
+  {
+    "query": "日志如何创建",
+    "expected_chunk_ids": [
+      "test_project\\logger.py::chunk_0",
+      "test_project\\logger.py::chunk_1"
+    ],
+    "question_type": "logging"
+  },
+  {
+    "query": "Calculator add 和 multiply 怎么测试",
+    "expected_chunk_ids": [
+      "test_project\\tests\\test_calculator.md::chunk_0",
+      "test_project\\utils.py::chunk_0"
+    ],
+    "question_type": "testing"
+  }
+]
