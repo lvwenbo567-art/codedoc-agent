@@ -5,14 +5,14 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from chunk_storage import save_chunks_to_json
-from hybrid_search_service import (
+from services.chunk_storage import save_chunks_to_json
+from services.hybrid_search_service import (
     hybrid_search_from_files,
     merge_hybrid_results,
     normalize_result_scores,
     validate_hybrid_parameters,
 )
-from index_service import build_vector_index_from_json
+from services.index_service import build_vector_index_from_json
 
 
 def make_chunk(

@@ -3,7 +3,7 @@ import sys
 import pytest
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from chunker import build_chunks, chunk_text, get_chunk_type
+from ingestion.chunker import build_chunks, chunk_text, get_chunk_type
 
 def test_chunk_text_basic():
     text="abcdefghij"
@@ -136,6 +136,18 @@ def test_build_chunks_fields():
     assert chunk["chunk_index"] == 0
     assert chunk["content"] == "hello world"
     assert chunk["length"] == len("hello world")
+    assert chunk["code_unit_type"] is None
+    assert chunk["symbol_name"] is None
+    assert chunk["qualified_name"] is None
+    assert chunk["parent_class"] is None
+    assert chunk["signature"] is None
+    assert chunk["start_line"] is None
+    assert chunk["end_line"] is None
+    assert chunk["docstring"] == ""
+    assert chunk["parser"] == "text"
+    assert chunk["parse_error"] is None
+    assert chunk["part_index"] == 0
+    assert chunk["part_count"] == 1
 
 def test_build_chunks_empty_content():
     files = [

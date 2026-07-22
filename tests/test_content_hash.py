@@ -5,7 +5,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from content_hash import compute_content_hash, normalize_content
+from utils.content_hash import compute_content_hash, normalize_content
 
 
 def test_same_content_same_hash():

@@ -6,8 +6,8 @@ from fastapi.testclient import TestClient
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
 from api_main import app
-from chunk_storage import save_chunks_to_json
-from vector_store import load_vector_index
+from services.chunk_storage import save_chunks_to_json
+from repositories.vector_store import load_vector_index
 
 
 client = TestClient(app)

@@ -3,7 +3,7 @@ import sys
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from retrieval_eval import (
+from evaluation.retrieval_eval import (
     calculate_hit_rate,
     calculate_mrr,
     calculate_recall,

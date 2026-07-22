@@ -3,7 +3,7 @@ import sys
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from citation_builder import build_citations
+from services.citation_builder import build_citations
 
 
 def test_build_citations():

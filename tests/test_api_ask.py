@@ -6,10 +6,10 @@ from fastapi.testclient import TestClient
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
 from api_main import app
-from chunk_storage import save_chunks_to_json
-from embedding_client import EmbeddingClient
-from index_service import build_vector_index_from_json
-from vector_store import save_vector_index
+from services.chunk_storage import save_chunks_to_json
+from clients.embedding_client import EmbeddingClient
+from services.index_service import build_vector_index_from_json
+from repositories.vector_store import save_vector_index
 
 
 client = TestClient(app)

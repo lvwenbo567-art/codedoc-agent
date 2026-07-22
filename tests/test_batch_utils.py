@@ -5,7 +5,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from batch_utils import iter_batches, split_batches
+from utils.batch_utils import iter_batches, split_batches
 
 
 def test_split_batches():

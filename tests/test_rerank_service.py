@@ -5,8 +5,8 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from rerank_client import RerankClient, RerankConfig
-from rerank_service import get_candidate_content, rerank_candidates
+from clients.rerank_client import RerankClient, RerankConfig
+from services.rerank_service import get_candidate_content, rerank_candidates
 
 
 class WrongCountClient:

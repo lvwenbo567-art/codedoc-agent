@@ -2,12 +2,12 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from api_response import (
+from api.api_response import (
     error_response,
     http_status_to_error_code,
     success_response,
 )
-from api_schema import (
+from schemas.api_schema import (
     AskRequest,
     EvalRequest,
     HybridSearchRequest,
@@ -45,15 +45,15 @@ from config import (
     DEFAULT_RERANK_PROVIDER,
     SUPPORTED_SUFFIXES,
 )
-from eval_service import evaluate_retrieval_from_files
-from index_service import build_vector_index_from_json
-from hybrid_search_service import hybrid_search_from_files
+from evaluation.eval_service import evaluate_retrieval_from_files
+from services.index_service import build_vector_index_from_json
+from services.hybrid_search_service import hybrid_search_from_files
 from logger import setup_logger
-from project_service import scan_project
-from rag_service import ask_from_vector_index
-from rerank_eval_service import compare_search_methods, load_eval_cases
-from retrieval_pipeline import retrieve_with_rerank
-from repository import (
+from services.project_service import scan_project
+from services.rag_service import ask_from_vector_index
+from evaluation.rerank_eval_service import compare_search_methods, load_eval_cases
+from pipelines.retrieval_pipeline import retrieve_with_rerank
+from repositories.repository import (
     get_chunk_by_id,
     get_file_by_id,
     get_project_by_id,
@@ -61,8 +61,9 @@ from repository import (
     list_files,
     list_projects,
 )
-from search_service import search_chunks_from_json
-from vector_search_service import search_vector_index_from_file
+from services.keyword_search_service import search_chunks_from_json
+from services.vector_search_service import search_vector_index_from_file
+from api.function_calling_router import router as function_calling_router
 
 
 logger = setup_logger()
@@ -72,6 +73,8 @@ app = FastAPI(
     description="A FastAPI backend for CodeDoc Research Agent.",
     version="0.1.0",
 )
+
+app.include_router(function_calling_router)
 
 
 @app.exception_handler(HTTPException)
@@ -633,6 +636,13 @@ def rerank_search_api(request: RerankSearchRequest) -> dict:
             rerank_max_length=request.rerank_max_length,
             rerank_local_files_only=request.rerank_local_files_only,
             chunk_type=request.chunk_type,
+            query_strategy=request.query_strategy,
+            rewrite_count=request.rewrite_count,
+            query_rewrite_provider=request.query_rewrite_provider,
+            query_rewrite_model=request.query_rewrite_model,
+            query_rewrite_base_url=request.query_rewrite_base_url,
+            query_rewrite_api_key=request.query_rewrite_api_key,
+            query_rewrite_timeout_seconds=request.query_rewrite_timeout_seconds,
         )
 
         return success_response(data=result)
@@ -713,6 +723,7 @@ def rerank_eval_api(request: RerankEvalRequest) -> dict:
                 rerank_max_length=request.rerank_max_length,
                 rerank_local_files_only=request.rerank_local_files_only,
                 chunk_type=request.chunk_type,
+                query_strategy="original",
             )
 
         result = compare_search_methods(
@@ -795,6 +806,8 @@ def ask_api(request: AskRequest) -> dict:
             rerank_local_files_only=request.rerank_local_files_only,
             chunk_type=request.chunk_type,
             max_context_chars=request.max_context_chars,
+            query_strategy=request.query_strategy,
+            rewrite_count=request.rewrite_count,
         )
 
         return success_response(data=result)

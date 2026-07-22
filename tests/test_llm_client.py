@@ -7,7 +7,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from llm_client import ChatClient, ChatConfig, generate_chat_response
+from clients.llm_client import ChatClient, ChatConfig, generate_chat_response
 
 
 def build_messages():

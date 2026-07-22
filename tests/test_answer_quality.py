@@ -5,7 +5,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from answer_quality import evaluate_answer_quality
+from services.answer_quality import evaluate_answer_quality
 
 
 def build_citations():

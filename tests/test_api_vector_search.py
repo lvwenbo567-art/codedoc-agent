@@ -6,8 +6,8 @@ from fastapi.testclient import TestClient
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
 from api_main import app
-from embedding_client import EmbeddingClient
-from vector_store import save_vector_index
+from clients.embedding_client import EmbeddingClient
+from repositories.vector_store import save_vector_index
 
 
 client = TestClient(app)

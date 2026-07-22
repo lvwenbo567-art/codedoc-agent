@@ -3,7 +3,7 @@ import sys
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from api_response import (
+from api.api_response import (
     error_response,
     http_status_to_error_code,
     success_response,

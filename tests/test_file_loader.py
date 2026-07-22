@@ -5,7 +5,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from file_loader import scan_project_files, load_project_files
+from ingestion.file_loader import scan_project_files, load_project_files
 
 def test_scan_project_files_supported_suffixes(tmp_path):
     readme = tmp_path / "README.md"

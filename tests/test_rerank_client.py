@@ -5,7 +5,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from rerank_client import (
+from clients.rerank_client import (
     RerankClient,
     RerankConfig,
     RerankServiceError,

@@ -4,10 +4,10 @@ import sys
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from chunk_storage import save_chunks_to_json
-from embedding_client import EmbeddingClient
-from index_service import build_vector_index_from_json, build_vector_records
-from vector_store import load_vector_index
+from services.chunk_storage import save_chunks_to_json
+from clients.embedding_client import EmbeddingClient
+from services.index_service import build_vector_index_from_json, build_vector_records
+from repositories.vector_store import load_vector_index
 
 
 def build_test_chunks():

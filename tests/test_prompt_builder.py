@@ -5,7 +5,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from prompt_builder import (
+from services.prompt_builder import (
     SYSTEM_PROMPT,
     build_context,
     build_rag_messages,

@@ -5,7 +5,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from vector_store import (
+from repositories.vector_store import (
     cosine_similarity,
     load_vector_index,
     save_vector_index,

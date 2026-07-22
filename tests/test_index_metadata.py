@@ -6,10 +6,10 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from chunk_storage import save_chunks_to_json
-from index_service import build_vector_index_from_json
-from vector_search_service import validate_index_compatibility
-from vector_store import (
+from services.chunk_storage import save_chunks_to_json
+from services.index_service import build_vector_index_from_json
+from services.vector_search_service import validate_index_compatibility
+from repositories.vector_store import (
     build_index_metadata,
     load_vector_index,
     load_vector_index_bundle,

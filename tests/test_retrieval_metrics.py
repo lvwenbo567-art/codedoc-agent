@@ -5,7 +5,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from retrieval_metrics import (
+from evaluation.retrieval_metrics import (
     calculate_hit_at_k,
     calculate_reciprocal_rank,
     extract_chunk_ids,

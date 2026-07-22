@@ -5,7 +5,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from chunk_storage import (
+from services.chunk_storage import (
     calculate_chunk_stats,
     load_chunks_from_json,
     save_chunks_to_json,

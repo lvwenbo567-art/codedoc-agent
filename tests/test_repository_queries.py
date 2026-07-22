@@ -5,7 +5,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from repository import (
+from repositories.repository import (
     get_chunk_by_id,
     get_file_by_id,
     get_project_by_id,
@@ -182,3 +182,27 @@ def test_invalid_pagination(tmp_path):
             offset=-1,
             db_path=db_path,
         )
+
+
+def test_save_project_snapshot_rolls_back_on_chunk_error(tmp_path):
+    db_path = str(tmp_path / "codedoc.db")
+
+    files, chunks = build_test_data()
+    broken_chunks = [
+        dict(chunks[0])
+    ]
+    broken_chunks[0].pop(
+        "source_path"
+    )
+
+    with pytest.raises(KeyError):
+        save_project_snapshot(
+            project_path="broken_project",
+            files=files,
+            chunks=broken_chunks,
+            db_path=db_path,
+        )
+
+    assert list_projects(
+        db_path=db_path,
+    ) == []

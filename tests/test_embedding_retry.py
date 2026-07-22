@@ -7,7 +7,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from embedding_client import EmbeddingClient, EmbeddingConfig
+from clients.embedding_client import EmbeddingClient, EmbeddingConfig
 
 
 def test_embedding_retry_success_after_500():

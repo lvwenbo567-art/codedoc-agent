@@ -5,9 +5,9 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from embedding_client import EmbeddingClient
-from rag_service import ask_from_vector_index
-from vector_store import save_vector_index
+from clients.embedding_client import EmbeddingClient
+from services.rag_service import ask_from_vector_index
+from repositories.vector_store import save_vector_index
 
 
 def create_test_index(

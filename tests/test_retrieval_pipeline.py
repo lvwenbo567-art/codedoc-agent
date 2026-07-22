@@ -5,9 +5,9 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from chunk_storage import save_chunks_to_json
-from index_service import build_vector_index_from_json
-from retrieval_pipeline import retrieve_with_rerank
+from services.chunk_storage import save_chunks_to_json
+from services.index_service import build_vector_index_from_json
+from pipelines.retrieval_pipeline import retrieve_with_rerank
 
 
 def make_chunk(chunk_id: str, content: str, chunk_type: str = "code") -> dict:
@@ -79,10 +79,16 @@ def test_retrieve_with_rerank_success(tmp_path):
     assert result["retrieval_mode"] == "hybrid_rerank"
     assert result["candidate_count"] == 3
     assert result["result_count"] == 2
+    assert result["retrieval_duration_ms"] >= 0
+    assert result["rerank_duration_ms"] >= 0
+    assert result["total_duration_ms"] >= 0
     assert result["results"][0]["chunk_id"] == "embedding::chunk_0"
     assert result["results"][0]["rank"] == 1
     assert "retrieval_rank" in result["results"][0]
     assert "rerank_score" in result["results"][0]
+    assert result["results"][0]["matched_queries"] == ["EmbeddingClient"]
+    assert result["results"][0]["matched_query_types"] == ["original"]
+    assert result["results"][0]["query_match_count"] == 1
 
 
 def test_retrieve_with_rerank_rejects_invalid_candidate_top_k(tmp_path):
@@ -107,4 +113,27 @@ def test_retrieve_with_rerank_rejects_final_top_k_larger_than_candidates(tmp_pat
             index_path=str(index_path),
             candidate_top_k=2,
             final_top_k=3,
+        )
+
+
+def test_retrieve_with_rerank_rejects_empty_query(tmp_path):
+    chunks_path, index_path = prepare_chunks_and_index(tmp_path)
+
+    with pytest.raises(ValueError, match="query"):
+        retrieve_with_rerank(
+            query="   ",
+            chunks_path=str(chunks_path),
+            index_path=str(index_path),
+        )
+
+
+def test_retrieve_with_rerank_rejects_invalid_rewrite_count(tmp_path):
+    chunks_path, index_path = prepare_chunks_and_index(tmp_path)
+
+    with pytest.raises(ValueError, match="rewrite_count"):
+        retrieve_with_rerank(
+            query="EmbeddingClient",
+            chunks_path=str(chunks_path),
+            index_path=str(index_path),
+            rewrite_count=0,
         )

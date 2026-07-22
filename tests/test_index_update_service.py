@@ -5,8 +5,8 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from content_hash import compute_content_hash
-from index_update_service import (
+from utils.content_hash import compute_content_hash
+from services.index_update_service import (
     build_incremental_records,
     build_vector_record,
     validate_reusable_index,

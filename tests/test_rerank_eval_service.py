@@ -6,7 +6,7 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from rerank_eval_service import (
+from evaluation.rerank_eval_service import (
     compare_search_methods,
     evaluate_search_method,
     load_eval_cases,

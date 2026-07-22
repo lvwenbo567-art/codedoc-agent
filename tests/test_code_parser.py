@@ -3,7 +3,7 @@ import sys
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from code_parser import parse_python_code
+from ingestion.code_parser import parse_python_code
 
 
 def test_parse_python_code_function_and_class():

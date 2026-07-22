@@ -5,12 +5,12 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from embedding_client import EmbeddingClient
-from vector_search_service import (
+from clients.embedding_client import EmbeddingClient
+from services.vector_search_service import (
     search_vector_index_from_file,
     search_vector_records,
 )
-from vector_store import save_vector_index
+from repositories.vector_store import save_vector_index
 
 
 def build_vector_records(dimension: int = 32):

@@ -5,10 +5,10 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from chunk_storage import save_chunks_to_json
-from index_service import build_vector_index_from_json
-from rerank_client import RerankServiceError
-from retrieval_pipeline import retrieve_with_rerank
+from services.chunk_storage import save_chunks_to_json
+from services.index_service import build_vector_index_from_json
+from clients.rerank_client import RerankServiceError
+from pipelines.retrieval_pipeline import retrieve_with_rerank
 
 
 class BrokenReranker:
@@ -76,7 +76,7 @@ def test_retrieve_with_rerank_falls_back_to_hybrid_on_service_error(
     chunks_path, index_path = prepare_index(tmp_path)
 
     monkeypatch.setattr(
-        "retrieval_pipeline.get_cached_rerank_client",
+        "pipelines.retrieval_pipeline.get_cached_rerank_client",
         lambda config: BrokenReranker(),
     )
 
@@ -106,7 +106,7 @@ def test_retrieve_with_rerank_does_not_hide_value_error(
     chunks_path, index_path = prepare_index(tmp_path)
 
     monkeypatch.setattr(
-        "retrieval_pipeline.get_cached_rerank_client",
+        "pipelines.retrieval_pipeline.get_cached_rerank_client",
         lambda config: WrongCountReranker(),
     )
 
