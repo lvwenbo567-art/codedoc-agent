@@ -2,3 +2,5 @@ fastapi
 uvicorn
 pytest
 httpx
+langchain>=1.1,<2
+langchain-openai>=1,<2

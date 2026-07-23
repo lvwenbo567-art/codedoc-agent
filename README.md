@@ -391,3 +391,68 @@
 - 新增 SQL 专项 `day28_group_join.sql`
 - 新增 `day28_report_repository.py`
 - 支持 GROUP BY、HAVING、INNER JOIN、LEFT JOIN 和聚合统计测试
+
+### Day 29
+
+- 新增 `services/query_rewrite_service.py`
+- 支持将用户原始问题改写为更适合代码和技术文档检索的 query
+- Query Rewrite 结果区分 `original_query` 和 `rewritten_queries`
+- 保留原始 query 作为多路检索保底，防止改写偏离用户意图
+- 支持真实 Chat 模型改写和规则兜底改写
+- 增强 JSON 解析，兼容模型返回 JSON 代码块或夹杂说明文本的情况
+- 新增 `services/multi_query_search_service.py`
+- 支持原始 query + 多条改写 query 分别执行 Hybrid Search
+- 支持按 `chunk_id` 合并多路召回结果
+- 记录 `matched_queries`、`matched_query_types`、`query_match_count` 和 `multi_query_score`
+- 修改 `pipelines/retrieval_pipeline.py`
+- 新增 `query_strategy`，支持 `original`、`rewrite` 和 `multi_query`
+- `original` 只使用原始问题检索
+- `rewrite` 使用第一条改写 query 检索
+- `multi_query` 使用原始 query 和多条改写 query 多路召回，再统一 Rerank
+- 修改 `schemas/api_schema.py` 和 `api_main.py`
+- `/rerank_search` 支持 Query Rewrite 和 Multi-Query 检索策略
+- `/ask` 在 `retrieval_mode="rerank"` 时支持 Query Rewrite 和 Multi-Query
+- 修改 `clients/llm_client.py`
+- 对本地 Ollama Chat 请求增加 `think=false`，降低本地 thinking 模型返回空内容的概率
+- 新增 Query Rewrite、Multi-Query、Retrieval Pipeline 策略和相关 API 测试
+- 当前项目从单 query 检索升级为多角度召回 + 合并去重 + Rerank 的增强检索链路
+
+### Day 30
+
+- 新增 `tools/` 工具层
+- 新增 `tools/models.py`
+- 使用 Pydantic 定义 `SearchCodeArgs`、`SearchDocumentsArgs`、`GetProjectStructureArgs` 和 `ToolResult`
+- 工具参数禁止额外字段，并校验 `top_k`、`candidate_top_k` 和 `query_strategy`
+- 新增 `tools/registry.py`
+- 实现 `ToolRegistry` 和 `ToolSpec`
+- Registry 同时作为工具注册中心和工具白名单
+- 支持生成 OpenAI-compatible function tool JSON Schema
+- 新增 `tools/executor.py`
+- 实现 `ToolExecutor`
+- 支持工具白名单检查、JSON 参数解析、Pydantic 参数校验、业务异常处理和统一 `ToolResult` 返回
+- 新增 `tools/code_doc_tools.py`
+- 将已有 CodeDoc 能力封装为三个工具：`search_code`、`search_documents`、`get_project_structure`
+- `search_code` 只检索 code chunk
+- `search_documents` 只检索 document chunk
+- `get_project_structure` 返回项目目录结构
+- `project_root`、`chunks_path` 和 `index_path` 由服务端绑定，不允许模型在工具参数中任意修改
+- 工具层支持真实 Embedding 和 Rerank 配置传递，避免索引 Provider 与查询 Provider 不一致
+- 新增 `function_calling/`
+- 新增 `function_calling/client.py`
+- 支持 `mock` 和 `openai_compatible` 两种 Function Calling 模型客户端
+- 支持解析模型返回的多个 `tool_calls`
+- 新增 `function_calling/loop.py`
+- 实现手写 Function Calling Loop
+- 支持模型生成工具调用、应用端执行工具、按 `tool_call_id` 返回工具结果、模型继续回答
+- 支持多个 tool calls 和 `max_steps` 防止无限循环
+- 新增 `api/function_calling_router.py`
+- 新增 `schemas/function_calling_schema.py`
+- 新增 `POST /agent/function-call`
+- 支持通过 API 测试模型工具调用、代码检索、文档检索和项目结构查询
+- 补充 Registry、Executor、CodeDoc Tools、Function Calling Loop 和 API 测试
+- 补充 `save_project_snapshot()` 事务回滚测试，验证 chunks 插入失败时 projects/files 不残留脏数据
+- 完成 app 目录整体分层重构
+- 当前 `app/` 根目录仅保留 `api_main.py`、`config.py` 和 `logger.py`
+- 业务代码迁移到 `api/`、`schemas/`、`clients/`、`services/`、`repositories/`、`pipelines/`、`evaluation/`、`ingestion/`、`utils/`、`cli/`、`tools/` 和 `function_calling/`
+- 删除旧的 app 根目录兼容入口，项目和测试均改为新分层导入
+- 当前项目从固定 RAG 工作流升级为具备 Tool Registry、Tool Executor 和手写 Function Calling Loop 的 Agentic RAG 雏形
