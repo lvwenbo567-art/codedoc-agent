@@ -33,8 +33,10 @@ def test_get_langchain_config(monkeypatch):
 
     data = response.json()
 
-    assert data["provider"] == "mock"
-    assert "api_key" not in data
+    assert data["model"]["provider"] == "mock"
+    assert "api_key" not in data["model"]
+    assert "middleware" in data
+    assert "fallback_api_key" not in data["middleware"]
 
 
 def test_mock_langchain_chat(monkeypatch):

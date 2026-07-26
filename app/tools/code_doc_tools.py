@@ -25,6 +25,7 @@ from pipelines.retrieval_pipeline import (
     retrieve_with_rerank,
 )
 from tools.errors import ToolBusinessError
+from tools.code_navigation_tools import register_code_navigation_tools
 from tools.models import (
     GetProjectStructureArgs,
     SearchCodeArgs,
@@ -522,6 +523,12 @@ def build_code_doc_tool_registry(
             args_model=GetProjectStructureArgs,
             handler=get_project_structure,
         )
+    )
+
+    register_code_navigation_tools(
+        registry=registry,
+        project_root=project_root,
+        chunks_path=chunks_path,
     )
 
     return registry

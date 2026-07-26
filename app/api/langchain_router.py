@@ -2,12 +2,23 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
+from langchain_agent.agent_factory import LangChainAgentConfigurationError
+from langchain_agent.agent_schema import LangChainAgentResult
+from langchain_agent.agent_service import (
+    LangChainAgentExecutionError,
+    LangChainAgentService,
+)
 from langchain_agent.chat_service import LangChainChatService
 from langchain_agent.message_builder import ConversationTurn
+from langchain_agent.middleware_config import LangChainMiddlewareConfig
 from langchain_agent.model_config import LangChainModelConfig
 from langchain_agent.output_schema import LangChainChatResult, QueryAnalysisResult
 from langchain_agent.structured_output_service import QueryAnalysisService
-from schemas.langchain_schema import LangChainChatRequest, QueryAnalysisRequest
+from schemas.langchain_schema import (
+    LangChainAgentRequest,
+    LangChainChatRequest,
+    QueryAnalysisRequest,
+)
 
 
 router = APIRouter(
@@ -47,9 +58,13 @@ def get_langchain_config() -> dict:
     """
     返回当前 LangChain 模型配置，不泄露 API Key。
     """
-    config = LangChainModelConfig.from_env()
+    model_config = LangChainModelConfig.from_env()
+    middleware_config = LangChainMiddlewareConfig.from_env()
 
-    return config.safe_dict()
+    return {
+        "model": model_config.safe_dict(),
+        "middleware": middleware_config.safe_dict(),
+    }
 
 
 @router.post(
@@ -123,6 +138,87 @@ def analyze_query(
             status_code=500,
             detail=(
                 "Query Analysis 失败："
+                f"{_format_downstream_error(exc)}"
+            ),
+        ) from exc
+
+
+@router.post(
+    "/agent",
+    response_model=LangChainAgentResult,
+)
+async def run_langchain_agent(
+    request: LangChainAgentRequest,
+) -> LangChainAgentResult:
+    """
+    使用 LangChain create_agent 执行 CodeDoc 工具调用 Agent。
+    """
+    config = LangChainModelConfig.from_env()
+    middleware_config = LangChainMiddlewareConfig.from_env()
+    service = LangChainAgentService(
+        config=config,
+        middleware_config=middleware_config,
+        project_root=request.project_root,
+        chunks_path=request.chunks_path,
+        index_path=request.index_path,
+        recursion_limit=request.recursion_limit,
+        embedding_provider=request.embedding_provider,
+        embedding_model=request.embedding_model,
+        embedding_base_url=request.embedding_base_url,
+        embedding_api_key=request.embedding_api_key,
+        embedding_timeout_seconds=request.embedding_timeout_seconds,
+        mock_dimension=request.mock_dimension,
+        rerank_provider=request.rerank_provider,
+        rerank_model=request.rerank_model,
+        rerank_device=request.rerank_device,
+        rerank_batch_size=request.rerank_batch_size,
+        rerank_max_length=request.rerank_max_length,
+        rerank_local_files_only=request.rerank_local_files_only,
+    )
+
+    try:
+        return await service.arun(
+            query=request.query,
+            project_id=request.project_id,
+            thread_id=request.thread_id,
+            user_id=request.user_id,
+            project_root=request.project_root,
+            chunks_path=request.chunks_path,
+            index_path=request.index_path,
+            recursion_limit=request.recursion_limit,
+            run_id=request.run_id,
+            trace_id=request.trace_id,
+        )
+
+    except LangChainAgentConfigurationError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+    except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+    except TimeoutError as exc:
+        raise HTTPException(
+            status_code=504,
+            detail=str(exc),
+        ) from exc
+
+    except LangChainAgentExecutionError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=str(exc),
+        ) from exc
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "LangChain Agent 执行失败："
                 f"{_format_downstream_error(exc)}"
             ),
         ) from exc
