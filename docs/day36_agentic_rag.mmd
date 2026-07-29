@@ -1,0 +1,36 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	initialize(initialize)
+	analyze_query(analyze_query)
+	exact_symbol_lookup(exact_symbol_lookup)
+	code_retrieve(code_retrieve)
+	document_retrieve(document_retrieve)
+	project_structure(project_structure)
+	assess_evidence(assess_evidence)
+	build_answer(build_answer)
+	fallback_answer(fallback_answer)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> initialize;
+	analyze_query -.-> code_retrieve;
+	analyze_query -.-> document_retrieve;
+	analyze_query -.-> exact_symbol_lookup;
+	analyze_query -.-> fallback_answer;
+	analyze_query -.-> project_structure;
+	assess_evidence -.-> build_answer;
+	assess_evidence -.-> fallback_answer;
+	code_retrieve --> assess_evidence;
+	document_retrieve --> assess_evidence;
+	exact_symbol_lookup -.-> assess_evidence;
+	exact_symbol_lookup -.-> code_retrieve;
+	initialize --> analyze_query;
+	project_structure --> assess_evidence;
+	build_answer --> __end__;
+	fallback_answer --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc

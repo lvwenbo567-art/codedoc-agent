@@ -65,6 +65,8 @@ from services.keyword_search_service import search_chunks_from_json
 from services.vector_search_service import search_vector_index_from_file
 from api.function_calling_router import router as function_calling_router
 from api.langchain_router import router as langchain_router
+from api.langgraph_router import router as langgraph_router
+from api.tool_agent_router import router as tool_agent_router
 
 
 logger = setup_logger()
@@ -77,6 +79,8 @@ app = FastAPI(
 
 app.include_router(function_calling_router)
 app.include_router(langchain_router)
+app.include_router(langgraph_router)
+app.include_router(tool_agent_router)
 
 
 @app.exception_handler(HTTPException)

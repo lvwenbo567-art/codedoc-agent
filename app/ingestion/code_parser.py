@@ -6,6 +6,27 @@ from pathlib import Path
 from typing import Literal
 
 
+
+'''
+我的项目对 Python 代码采用的是基于 AST 语法结构的切块，而不是直接按照固定字符数切分。
+
+首先读取 Python 文件内容，通过 ast.parse() 将源码解析成抽象语法树。AST 不会执行代码，只是识别代码的语法结构，例如模块、函数、类和方法。
+
+然后遍历 AST 的顶层节点 tree.body：
+
+顶层普通函数和异步函数分别生成一个 Chunk；
+类会生成一个类摘要 Chunk，里面保留类签名、文档字符串、类属性和方法签名；
+类中的每个普通方法和异步方法再分别生成独立 Chunk；
+import、全局变量、常量等顶层代码合并成模块级 Chunk。
+
+AST 节点会提供 lineno 和 end_lineno，我根据起止行号从原始源码中截取完整代码，因此函数的装饰器、签名、文档字符串和函数体都能够保留下来。
+
+每个 Chunk 还会记录文件路径、Symbol 类型、Symbol 名称、完整名称、起止行号等 Metadata。例如类方法会记录成 Calculator.add，方便后续向量检索时定位到具体方法。
+
+这样做的优点是尽量保证一个函数或方法的语义完整性，避免固定长度切块把一个函数从中间截断。
+
+'''
+
 CodeSymbolType = Literal[
     "module",
     "function",
@@ -83,6 +104,7 @@ def _extract_source_lines(
 def _safe_unparse(node: ast.AST | None) -> str:
     """
     尽量把 AST 节点还原成源码文本，失败时返回空字符串。
+    ast.unparse() 可以把 AST 节点转换回代码文本
     """
     if node is None:
         return ""
@@ -144,6 +166,20 @@ def _build_class_signature(node: ast.ClassDef) -> str:
     return f"class {node.name}"
       #"class Calculator"
 
+
+'''
+class Calculator
+
+Docstring:
+...
+
+Class attributes:
+- ...
+
+Methods:
+- def add(...)
+- def multiply(...)
+'''
 def _build_class_summary(node: ast.ClassDef) -> str:
     """
     类 chunk 只保存类摘要，避免和方法 chunk 大量重复。
