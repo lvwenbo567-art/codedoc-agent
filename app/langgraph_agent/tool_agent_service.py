@@ -59,6 +59,17 @@ def _serialize_messages(
     ]
 
 
+def serialize_agent_messages(
+    messages: list[Any],
+    *,
+    max_content_chars: int,
+) -> list[dict[str, Any]]:
+    return _serialize_messages(
+        messages,
+        max_chars=max_content_chars,
+    )
+
+
 class CodeDocToolAgentService:
     """
     Day37 Tool Agent 服务入口。

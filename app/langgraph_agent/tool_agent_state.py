@@ -11,41 +11,76 @@ from typing_extensions import TypedDict
 
 ToolAgentStopReason = Literal[
     "running",
+    "interrupted",#被 interrupt 暂停，等待人工审批
     "completed",
     "model_call_limit",
     "tool_call_limit",
     "repeated_tool_call",
-    "invalid_tool_call",#模型请求了未注册工具
-    "remaining_steps_limit",#LangGraph 剩余步数不足
-    "empty_model_response",#模型既没有返回文本，也没有返回 tool_calls
-    "model_execution_error",#模型调用失败
-    "graph_recursion_limit",#LangGraph 最终 recursion_limit 被触发
-    "execution_error",#其他未知执行错误
+    "invalid_tool_call",
+    "invalid_review_decision",
+    "remaining_steps_limit",
+    "empty_model_response",
+    "model_execution_error",
+    "graph_recursion_limit",
+    "execution_error",
+]
+
+
+ApprovalStatus = Literal[#审批状态
+    "not_required",
+    "pending",
+    "approved",
+    "rejected",
+    "edited",
 ]
 
 
 class ToolCallHistoryItem(TypedDict, total=False):
-    '''单次工具调用历史记录'''
-    sequence: int#表示这是第几次工具调用
+    """
+    单次工具调用历史。
+
+    signature 用于识别“同一个工具 + 同一组参数”是否被模型重复调用。
+    """
+
+    sequence: int
     tool_call_id: str
     tool_name: str
     arguments: dict[str, Any]
-    signature: str#工具名 + 排序后的参数 JSON search_code:{"query":"RerankClient","top_k":5}
-    #这样可以判断模型是不是一直调用同一个工具和同一组参数。
+    signature: str
     repeat_index: int
-    model_call_index: int#表示这个工具调用是第几次模型调用产生的
+    model_call_index: int
+
+
+class ReviewHistoryItem(TypedDict, total=False):
+    """
+    一次人工审批历史。
+
+    original_tool_calls 是模型原始想调用的工具；
+    final_tool_calls 是审批后最终允许继续执行的工具。
+    """
+
+    request_id: str
+    decision: str
+    feedback: str | None
+    original_tool_calls: list[dict[str, Any]]
+    final_tool_calls: list[dict[str, Any]]
 
 
 class CodeDocToolAgentState(TypedDict, total=False):
     """
-    Day37 Tool Agent 共享状态。
+    Tool Agent 的共享状态。
 
-    messages 使用 add_messages，让 HumanMessage、AIMessage、ToolMessage
-    能被 LangGraph 正确追加和反序列化。
+    messages 使用 add_messages，让 HumanMessage、AIMessage、ToolMessage 可以被
+    LangGraph 正确追加；带相同 id 的消息会被替换，这正好支持 Day39 edit
+    审批场景中替换原 AIMessage.tool_calls。
     """
 
     query: str
     project_id: int
+    run_id: str
+    thread_id: str
+    effective_thread_id: str
+    turn_index: int
     messages: Annotated[list[BaseMessage], add_messages]
     model_call_count: int
     tool_call_count: int
@@ -54,6 +89,10 @@ class CodeDocToolAgentState(TypedDict, total=False):
     max_identical_tool_calls: int
     tool_call_history: Annotated[list[ToolCallHistoryItem], operator.add]
     execution_steps: Annotated[list[str], operator.add]
+    pending_tool_calls: list[dict[str, Any]]#模型已经生成，但还没执行的工具调用
+    approval_request_id: str | None#这一次审批请求的 ID
+    approval_status: ApprovalStatus#表示当前审批状态：
+    review_history: Annotated[list[ReviewHistoryItem], operator.add]#保存审批历史。
     remaining_steps: RemainingSteps
     answer: str
     completed: bool

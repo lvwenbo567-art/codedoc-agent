@@ -23,6 +23,9 @@ logs/
 *.db
 *.sqlite
 *.sqlite3
+data/langgraph_checkpoints.sqlite
+data/langgraph_checkpoints.sqlite-shm
+data/langgraph_checkpoints.sqlite-wal
 
 # IDE
 .vscode/

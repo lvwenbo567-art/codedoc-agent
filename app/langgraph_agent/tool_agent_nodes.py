@@ -5,7 +5,7 @@ from typing import Any, Literal
 
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
 from langgraph.prebuilt import ToolNode#ToolNode 是 LangGraph 已经封装好的“工具执行节点”。
-from langgraph.types import Command#更新哪些状态，以及下一步去哪个节点。
+from langgraph.types import Command, Overwrite#更新哪些状态，以及下一步去哪个节点。
 
 from langchain_agent.chat_service import extract_message_text
 from langchain_agent.message_window_middleware import select_message_window
@@ -82,9 +82,11 @@ class CodeDocToolAgentNodes:
             '''
     def initialize_node(self, state: CodeDocToolAgentState) -> dict:
         query = str(state.get("query") or "").strip()
+        previous_turn_index = int(state.get("turn_index", 0))
 
         return {
             "query": query,
+            "turn_index": previous_turn_index + 1,
             "model_call_count": 0,
             "tool_call_count": 0,
             "max_model_calls": self.dependencies.runtime.max_model_calls,
@@ -92,12 +94,16 @@ class CodeDocToolAgentNodes:
             "max_identical_tool_calls": (
                 self.dependencies.runtime.max_identical_tool_calls
             ),
-            "tool_call_history": [],
+            "tool_call_history": Overwrite(value=[]),
+            "pending_tool_calls": [],
+            "approval_request_id": None,
+            "approval_status": "not_required",
+            "review_history": Overwrite(value=[]),
             "answer": "",
             "completed": False,
             "stop_reason": "running",
             "error_message": None,
-            "execution_steps": ["initialize"],
+            "execution_steps": Overwrite(value=["initialize"]),
         }
 
     def call_model_node(self, state: CodeDocToolAgentState) -> dict:
@@ -272,6 +278,7 @@ class CodeDocToolAgentNodes:
             "tool_call_limit": "Agent 达到工具调用次数上限，已安全停止。",
             "repeated_tool_call": "Agent 检测到重复工具调用，已安全停止。",
             "invalid_tool_call": "Agent 请求了未注册工具，已安全停止。",
+            "invalid_review_decision": "Agent 审批决定不合法，已安全停止。",
             "remaining_steps_limit": "Agent 剩余图执行步数不足，已安全停止。",
             "empty_model_response": "模型没有返回有效文本或工具调用，已停止。",
             "model_execution_error": "模型调用失败，Agent 已停止。",
