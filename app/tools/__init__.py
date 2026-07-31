@@ -4,6 +4,7 @@ from tools.code_doc_tools import (
 from tools.executor import ToolExecutor
 from tools.models import (
     GetProjectStructureArgs,
+    RunProjectTestsArgs,
     SearchCodeArgs,
     SearchDocumentsArgs,
     ToolResult,
@@ -16,6 +17,7 @@ from tools.registry import (
 
 __all__ = [
     "GetProjectStructureArgs",
+    "RunProjectTestsArgs",
     "SearchCodeArgs",
     "SearchDocumentsArgs",
     "ToolExecutor",

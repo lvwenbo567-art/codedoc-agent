@@ -22,12 +22,21 @@ def _dependencies(
         runtime=ToolAgentRuntimeConfig(
             project_root=".",
             enable_human_review=enable_human_review,
-            approval_required_tools=("read_file_range",),
+            approval_required_tools=(
+                "read_file_range",
+                "run_project_tests",
+            ),
         ),
         model_config=LangChainModelConfig(provider="mock"),
         model_with_tools=None,
         tools=[],
-        allowed_tool_names=frozenset({"search_code", "read_file_range"}),
+        allowed_tool_names=frozenset(
+            {
+                "search_code",
+                "read_file_range",
+                "run_project_tests",
+            }
+        ),
     )
 
 
@@ -79,6 +88,15 @@ def test_protected_tool_routes_to_human_review() -> None:
     assert command.goto == "human_review"
     assert command.update["approval_status"] == "pending"
     assert command.update["approval_request_id"]
+
+
+def test_run_project_tests_routes_to_human_review() -> None:
+    nodes = HumanReviewToolAgentNodes(dependencies=_dependencies())
+    command = nodes.controller_node(_state_for_tool("run_project_tests"))
+
+    assert command.goto == "human_review"
+    assert command.update["approval_status"] == "pending"
+    assert command.update["pending_tool_calls"][0]["name"] == "run_project_tests"
 
 
 def test_hitl_disabled_routes_to_prepare_tools() -> None:

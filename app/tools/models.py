@@ -162,6 +162,31 @@ class GetProjectStructureArgs(StrictModel):
     )
 
 
+class RunProjectTestsArgs(StrictModel):
+    test_path: str = Field(
+        default="tests",
+        min_length=1,
+        max_length=500,
+        description=(
+            "需要运行的 pytest 测试路径，必须是项目根目录内的相对路径，"
+            "例如 tests 或 tests/test_agent_eval_metrics.py。"
+        ),
+    )
+
+    keyword: str | None = Field(
+        default=None,
+        max_length=200,
+        description="可选 pytest -k 过滤表达式。为空时不添加 -k 参数。",
+    )
+
+    max_seconds: int = Field(
+        default=60,
+        ge=5,
+        le=120,
+        description="测试执行超时时间，单位秒。",
+    )
+
+
 class ToolResult(StrictModel):
     """
     所有 Tool 统一返回此结构。

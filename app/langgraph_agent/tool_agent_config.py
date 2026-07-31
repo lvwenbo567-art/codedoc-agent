@@ -78,7 +78,10 @@ class ToolAgentRuntimeConfig(BaseModel):
     rerank_max_length: int = Field(default=DEFAULT_RERANK_MAX_LENGTH, gt=0)
     rerank_local_files_only: bool = DEFAULT_RERANK_LOCAL_FILES_ONLY
     enable_human_review: bool = True
-    approval_required_tools: tuple[str, ...] = ("read_file_range",)
+    approval_required_tools: tuple[str, ...] = (
+        "read_file_range",
+        "run_project_tests",
+    )
 
     @field_validator("approval_required_tools")
     @classmethod

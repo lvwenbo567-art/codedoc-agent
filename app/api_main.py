@@ -70,6 +70,7 @@ from api.langchain_router import router as langchain_router
 from api.langgraph_router import router as langgraph_router
 from api.persistent_agent_router import router as persistent_agent_router
 from api.tool_agent_router import router as tool_agent_router
+from api.agent_quality_router import router as agent_quality_router
 
 
 logger = setup_logger()
@@ -87,6 +88,7 @@ app.include_router(langchain_router)
 app.include_router(langgraph_router)
 app.include_router(persistent_agent_router)
 app.include_router(tool_agent_router)
+app.include_router(agent_quality_router)
 
 
 @app.exception_handler(HTTPException)

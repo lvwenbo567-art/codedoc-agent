@@ -47,7 +47,10 @@ class HITLAgentBaseRequest(StrictHITLAgentModel):
     recursion_limit: int = Field(default=40, ge=8, le=120)
     enable_human_review: bool = True
     approval_required_tools: list[str] = Field(
-        default_factory=lambda: ["read_file_range"]
+        default_factory=lambda: [
+            "read_file_range",
+            "run_project_tests",
+        ]
     )
     embedding_provider: str = DEFAULT_EMBEDDING_PROVIDER
     embedding_model: str = Field(

@@ -31,6 +31,7 @@ from tools.models import (
     SearchCodeArgs,
     SearchDocumentsArgs,
 )
+from tools.project_test_tools import register_project_test_tools
 from tools.registry import (
     ToolRegistry,
     ToolSpec,
@@ -529,6 +530,11 @@ def build_code_doc_tool_registry(
         registry=registry,
         project_root=project_root,
         chunks_path=chunks_path,
+    )
+
+    register_project_test_tools(
+        registry=registry,
+        project_root=project_root,
     )
 
     return registry
