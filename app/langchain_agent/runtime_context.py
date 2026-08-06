@@ -34,6 +34,7 @@ def build_effective_thread_id(
     *,
     project_id: int,
     thread_id: str,
+    user_id: str | None = None,
 ) -> str:
     thread_id = thread_id.strip()
 
@@ -43,4 +44,10 @@ def build_effective_thread_id(
     if not thread_id:
         raise ValueError("thread_id 不能为空")
 
-    return f"project:{project_id}:thread:{thread_id}"
+    if user_id is None:
+        return f"project:{project_id}:thread:{thread_id}"
+
+    normalized_user_id = user_id.strip()
+    if not normalized_user_id:
+        raise ValueError("user_id 不能为空")
+    return f"user:{normalized_user_id}:project:{project_id}:thread:{thread_id}"

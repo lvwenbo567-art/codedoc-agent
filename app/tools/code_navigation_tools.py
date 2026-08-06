@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import hashlib
 import json
@@ -9,6 +9,8 @@ from typing import Any
 from tools.code_navigation_models import GetSymbolDefinitionArgs, ReadFileRangeArgs
 from tools.errors import ToolBusinessError
 from tools.registry import ToolRegistry, ToolSpec
+from security.path_guard import SafeProjectPathResolver
+from security.security_models import PathAccessDeniedError
 
 
 ALLOWED_TEXT_SUFFIXES = {
@@ -34,51 +36,64 @@ def _resolve_safe_project_file(
     source_path: str,
 ) -> Path:
     """
-    将模型提供的相对路径解析为项目内文件。
+    将模型或检索结果提供的 source_path 解析为项目内真实文件。
 
-    防止：
-    - 绝对路径读取
-    - ../ 路径穿越
-    - 读取项目目录之外的文件
+    兼容两种常见路径：
+    1. 相对 project_root 的路径，例如 src/main.py；
+    2. 相对 codedoc-agent 工作目录的路径，例如 data/uploaded_projects/xxx/project/src/main.py。
+
+    无论哪种路径，最终解析出的文件都必须位于 project_root 内，防止越权读取。
     """
     normalized = _normalize_path(source_path)
     relative_path = Path(normalized)
-
-    if relative_path.is_absolute():
-        raise ToolBusinessError(
-            error_code="ABSOLUTE_PATH_FORBIDDEN",
-            message="source_path 必须是相对于项目根目录的路径",
-        )
-
     root = project_root.resolve()
-    candidate = (root / relative_path).resolve()
 
-    if candidate != root and root not in candidate.parents:
+    if ".." in relative_path.parts:
         raise ToolBusinessError(
             error_code="PATH_OUTSIDE_PROJECT",
             message="禁止读取项目根目录之外的文件",
         )
 
-    if not candidate.exists():
+    candidates: list[Path] = []
+
+    if relative_path.is_absolute():
+        candidates.append(relative_path.resolve())
+    else:
+        candidates.extend(
+            [
+                (root / relative_path).resolve(),
+                relative_path.resolve(),
+            ]
+        )
+
+    candidate = next(
+        (
+            item
+            for item in candidates
+            if item.exists()
+        ),
+        None,
+    )
+
+    if candidate is None:
         raise ToolBusinessError(
             error_code="SOURCE_FILE_NOT_FOUND",
             message=f"文件不存在：{normalized}",
         )
 
-    if not candidate.is_file():
+    try:
+        return SafeProjectPathResolver(project_root=root).resolve_file(str(candidate))
+    except PathAccessDeniedError as exc:
+        if candidate.suffix.lower() not in ALLOWED_TEXT_SUFFIXES:
+            error_code = "UNSUPPORTED_SOURCE_SUFFIX"
+            message = f"不允许读取该文件类型：{candidate.suffix}"
+        else:
+            error_code = "PATH_ACCESS_DENIED"
+            message = "文件路径不满足安全访问策略"
         raise ToolBusinessError(
-            error_code="SOURCE_PATH_NOT_FILE",
-            message=f"路径不是文件：{normalized}",
-        )
-
-    if candidate.suffix.lower() not in ALLOWED_TEXT_SUFFIXES:
-        raise ToolBusinessError(
-            error_code="UNSUPPORTED_SOURCE_SUFFIX",
-            message=f"不允许读取该文件类型：{candidate.suffix}",
-        )
-
-    return candidate
-
+            error_code=error_code,
+            message=message,
+        ) from exc
 
 def _load_chunks(chunks_path: Path) -> list[dict[str, Any]]:
     if not chunks_path.exists():
@@ -140,6 +155,18 @@ def _read_file_range(
         project_root=Path(project_root),
         source_path=source_path,
     )
+
+    resolver = SafeProjectPathResolver(project_root=project_root)
+    try:
+        resolver.validate_read_range(
+            start_line=start_line,
+            end_line=end_line,
+        )
+    except (ValueError, PathAccessDeniedError) as exc:
+        raise ToolBusinessError(
+            error_code="INVALID_READ_RANGE",
+            message="读取行号范围不满足安全策略",
+        ) from exc
 
     lines = file_path.read_text(
         encoding="utf-8",
@@ -427,4 +454,5 @@ def register_code_navigation_tools(
             handler=get_symbol_definition,
         )
     )
+
 

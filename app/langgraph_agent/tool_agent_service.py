@@ -13,6 +13,7 @@ from langgraph_agent.tool_agent_dependencies import (
 )
 from langgraph_agent.tool_agent_graph import build_codedoc_tool_agent_graph
 from langgraph_agent.tool_agent_state import CodeDocToolAgentState
+from security.sensitive_data_redactor import SensitiveDataRedactor
 
 
 class CodeDocToolAgentExecutionError(RuntimeError):
@@ -25,7 +26,9 @@ def _serialize_message(
     max_chars: int,
 ) -> dict[str, Any]:
     '''这个函数负责把 LangChain Message 转成 JSON 可返回的 dict。'''
-    content = str(getattr(message, "content", ""))
+    content = SensitiveDataRedactor().redact(
+        str(getattr(message, "content", ""))
+    ).text
 
     if len(content) > max_chars:
         content = content[:max_chars] + "\n...[content truncated]"

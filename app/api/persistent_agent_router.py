@@ -100,11 +100,16 @@ async def run_persistent_agent(
             runtime=agent_runtime,
             model_config=model_config,
         )
+        run_kwargs = {
+            "query": body.query,
+            "project_id": body.project_id,
+            "thread_id": body.thread_id,
+            "recursion_limit": body.recursion_limit,
+        }
+        if body.user_id != "local-user":
+            run_kwargs["user_id"] = body.user_id
         result = await service.arun(
-            query=body.query,
-            project_id=body.project_id,
-            thread_id=body.thread_id,
-            recursion_limit=body.recursion_limit,
+            **run_kwargs,
         )
 
         return PersistentAgentResponse.model_validate(result)

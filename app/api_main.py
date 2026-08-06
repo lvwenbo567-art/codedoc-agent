@@ -1,9 +1,14 @@
-from fastapi import FastAPI, HTTPException, Request
+import re
+import uuid
+import zipfile
+from pathlib import Path
+
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
 from app_lifecycle import app_lifespan
 
 from api.api_response import (
+    UTF8JSONResponse,
     error_response,
     http_status_to_error_code,
     success_response,
@@ -64,6 +69,7 @@ from repositories.repository import (
 )
 from services.keyword_search_service import search_chunks_from_json
 from services.vector_search_service import search_vector_index_from_file
+from services.vector_search_gateway import search_vector_store
 from api.function_calling_router import router as function_calling_router
 from api.human_review_router import router as human_review_router
 from api.langchain_router import router as langchain_router
@@ -71,6 +77,10 @@ from api.langgraph_router import router as langgraph_router
 from api.persistent_agent_router import router as persistent_agent_router
 from api.tool_agent_router import router as tool_agent_router
 from api.agent_quality_router import router as agent_quality_router
+from api.vector_store_router import router as vector_store_router
+from api.ingestion_job_router import router as ingestion_job_router
+from api.security_router import router as security_router
+from api.memory_router import router as memory_router
 
 
 logger = setup_logger()
@@ -80,6 +90,7 @@ app = FastAPI(
     description="A FastAPI backend for CodeDoc Research Agent.",
     version="0.1.0",
     lifespan=app_lifespan,
+    default_response_class=UTF8JSONResponse,
 )
 
 app.include_router(function_calling_router)
@@ -89,19 +100,79 @@ app.include_router(langgraph_router)
 app.include_router(persistent_agent_router)
 app.include_router(tool_agent_router)
 app.include_router(agent_quality_router)
+app.include_router(vector_store_router)
+app.include_router(ingestion_job_router)
+app.include_router(security_router)
+app.include_router(memory_router)
+
+
+UPLOAD_PROJECT_ROOT = Path("data/uploaded_projects")
+
+
+def _safe_project_upload_name(name: str) -> str:
+    """
+    将用户提供的项目名转换成安全目录名。
+    """
+    normalized = re.sub(r"[^0-9A-Za-z_.-]+", "_", name.strip())
+    normalized = normalized.strip("._")
+
+    return normalized or "uploaded_project"
+
+
+def _safe_extract_zip(
+    *,
+    zip_path: Path,
+    extract_root: Path,
+) -> int:
+    """
+    安全解压 zip，禁止绝对路径和 ../ 路径穿越。
+    """
+    extracted_count = 0
+    root = extract_root.resolve()
+
+    with zipfile.ZipFile(zip_path) as archive:
+        for member in archive.infolist():
+            member_name = member.filename.replace("\\", "/")
+
+            if (
+                not member_name
+                or member_name.startswith("/")
+                or member_name.startswith("__MACOSX/")
+            ):
+                continue
+
+            target = (root / member_name).resolve()
+
+            if target != root and root not in target.parents:
+                raise ValueError(
+                    f"zip 文件包含非法路径：{member.filename}"
+                )
+
+            if member.is_dir():
+                target.mkdir(parents=True, exist_ok=True)
+                continue
+
+            target.parent.mkdir(parents=True, exist_ok=True)
+
+            with archive.open(member) as source, target.open("wb") as output:
+                output.write(source.read())
+
+            extracted_count += 1
+
+    return extracted_count
 
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(
     request: Request,
     exc: HTTPException,
-) -> JSONResponse:
+) -> UTF8JSONResponse:
     """
     将 HTTPException 统一包装成项目约定的错误响应格式。
     """
     code = http_status_to_error_code(exc.status_code)
 
-    return JSONResponse(
+    return UTF8JSONResponse(
         status_code=exc.status_code,
         content=error_response(
             code=code,
@@ -114,11 +185,11 @@ async def http_exception_handler(
 async def validation_exception_handler(
     request: Request,
     exc: RequestValidationError,
-) -> JSONResponse:
+) -> UTF8JSONResponse:
     """
     将 Pydantic 参数校验错误统一包装成 VALIDATION_ERROR。
     """
-    return JSONResponse(
+    return UTF8JSONResponse(
         status_code=422,
         content=error_response(
             code="VALIDATION_ERROR",
@@ -193,6 +264,66 @@ def get_config() -> dict:
             "default_rerank_candidate_top_k": DEFAULT_RERANK_CANDIDATE_TOP_K,
             "default_rerank_final_top_k": DEFAULT_RERANK_FINAL_TOP_K,
             "default_rerank_max_length": DEFAULT_RERANK_MAX_LENGTH,
+        }
+    )
+
+
+@app.post("/project-upload/zip")
+async def upload_project_zip_api(
+    file: UploadFile = File(...),
+    project_name: str = Form(default="uploaded_project"),
+) -> dict:
+    """
+    上传 zip 项目包，解压到后端本地工作区。
+
+    本接口只负责上传和解压，不自动扫描、不自动建索引。
+    前端随后继续调用 /scan 和 /index。
+    """
+    if not file.filename:
+        raise HTTPException(
+            status_code=400,
+            detail="上传文件名不能为空",
+        )
+
+    if not file.filename.lower().endswith(".zip"):
+        raise HTTPException(
+            status_code=400,
+            detail="当前只支持上传 .zip 项目包",
+        )
+
+    safe_name = _safe_project_upload_name(project_name)
+    upload_id = uuid.uuid4().hex[:12]
+    target_root = UPLOAD_PROJECT_ROOT / f"{safe_name}_{upload_id}"
+    target_root.mkdir(parents=True, exist_ok=False)
+    zip_path = target_root / "source.zip"
+    extract_root = target_root / "project"
+
+    try:
+        content = await file.read()
+        zip_path.write_bytes(content)
+        extracted_count = _safe_extract_zip(
+            zip_path=zip_path,
+            extract_root=extract_root,
+        )
+    except zipfile.BadZipFile as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="上传文件不是合法 zip",
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+    return success_response(
+        data={
+            "project_name": safe_name,
+            "upload_id": upload_id,
+            "filename": file.filename,
+            "project_path": str(extract_root),
+            "zip_path": str(zip_path),
+            "extracted_file_count": extracted_count,
         }
     )
 
@@ -528,8 +659,9 @@ def vector_search_api(request: VectorSearchRequest) -> dict:
     )
 
     try:
-        result = search_vector_index_from_file(
+        result = search_vector_store(
             query=request.query,
+            project_id=request.project_id,
             index_path=request.index_path,
             top_k=request.top_k,
             embedding_provider=request.embedding_provider,
@@ -539,6 +671,7 @@ def vector_search_api(request: VectorSearchRequest) -> dict:
             timeout_seconds=request.embedding_timeout_seconds,
             mock_dimension=mock_dimension,
             chunk_type=request.chunk_type,
+            backend=request.vector_store_backend,
         )
 
         return success_response(data=result)
@@ -578,6 +711,8 @@ def hybrid_search_api(request: HybridSearchRequest) -> dict:
     try:
         result = hybrid_search_from_files(
             query=request.query,
+            project_id=request.project_id,
+            vector_store_backend=request.vector_store_backend,
             chunks_path=request.chunks_path,
             index_path=request.index_path,
             keyword_top_k=request.keyword_top_k,

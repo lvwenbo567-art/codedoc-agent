@@ -17,6 +17,7 @@ from langgraph_agent.state import GraphEvidence
 from services.answer_quality import evaluate_answer_quality
 from services.citation_builder import build_citations
 from services.prompt_builder import build_rag_messages
+from context_engineering.secure_context_builder import SecureContextBuilder
 
 
 @dataclass(frozen=True)
@@ -95,6 +96,13 @@ class GraphAnswerService:
             raise ValueError(
                 "没有可用于生成回答的证据"
             )
+
+        secure_context = SecureContextBuilder().build(
+            evidence_items=retrieved_chunks
+        )
+        retrieved_chunks = secure_context.selected_evidence
+        if not retrieved_chunks:
+            raise ValueError("安全上下文过滤后没有可用证据")
 
         raw_messages = build_rag_messages(
             query=query,

@@ -14,9 +14,11 @@ from langgraph_agent.tool_agent_dependencies import CodeDocToolAgentDependencies
 from langgraph_agent.tool_agent_nodes import (
     CodeDocToolAgentNodes,
     _last_ai_message,
+    redact_tool_messages,
 )
 from langgraph_agent.tool_agent_state import CodeDocToolAgentState
 from langgraph_agent.tool_call_guard import evaluate_tool_calls
+from security.tool_security_policy import ToolSecurityPolicy
 
 
 def _normalize_tool_calls(tool_calls: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -162,6 +164,17 @@ class HumanReviewToolAgentNodes(CodeDocToolAgentNodes):
                     "approval_status": "pending",
                     "stop_reason": "interrupted",
                     "execution_steps": ["controller_review"],
+                },
+            )
+
+        security_result = ToolSecurityPolicy().validate_calls(tool_calls)
+        if not security_result.allowed:
+            return Command(
+                goto="limit_answer",
+                update={
+                    "stop_reason": "invalid_tool_call",
+                    "error_message": security_result.error_message,
+                    "execution_steps": ["controller_security_blocked"],
                 },
             )
 
@@ -394,6 +407,19 @@ class HumanReviewToolAgentNodes(CodeDocToolAgentNodes):
                 },
             )
 
+        security_result = ToolSecurityPolicy().validate_calls(
+            pending_tool_calls
+        )
+        if not security_result.allowed:
+            return Command(
+                goto="limit_answer",
+                update={
+                    "stop_reason": "invalid_tool_call",
+                    "error_message": security_result.error_message,
+                    "execution_steps": ["prepare_tools_security_blocked"],
+                },
+            )
+
         return Command(
             goto="tools",
             update={
@@ -424,10 +450,13 @@ class HumanReviewToolAgentNodes(CodeDocToolAgentNodes):
         if isinstance(result, dict):
             return {
                 **result,
+                "messages": redact_tool_messages(
+                    list(result.get("messages") or [])
+                ),
                 "execution_steps": ["tools"],
             }
 
         return {
-            "messages": list(result or []),
+            "messages": redact_tool_messages(list(result or [])),
             "execution_steps": ["tools"],
         }

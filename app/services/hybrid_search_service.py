@@ -12,7 +12,7 @@ from config import (
 )
 from services.keyword_retriever import search_chunks
 from services.keyword_search_service import build_search_results
-from services.vector_search_service import search_vector_index_from_file
+from services.vector_search_gateway import search_vector_store
 
 
 def normalize_result_scores(
@@ -179,6 +179,8 @@ def hybrid_search_from_files(
     query: str,
     chunks_path: str,
     index_path: str = DEFAULT_VECTOR_INDEX_PATH,
+    project_id: int = 1,
+    vector_store_backend: str | None = None,
     keyword_top_k: int = 10,
     vector_top_k: int = 10,
     final_top_k: int = 5,
@@ -204,8 +206,9 @@ def hybrid_search_from_files(
         top_k=keyword_top_k,
         chunk_type=chunk_type,
     )
-    vector_result = search_vector_index_from_file(
+    vector_result = search_vector_store(
         query=query,
+        project_id=project_id,
         index_path=index_path,
         top_k=vector_top_k,
         embedding_provider=embedding_provider,
@@ -216,6 +219,7 @@ def hybrid_search_from_files(
         mock_dimension=mock_dimension,
         chunk_type=chunk_type,
         include_content=True,
+        backend=vector_store_backend,
     )
     results = merge_hybrid_results(
         keyword_results=keyword_results,
@@ -229,6 +233,8 @@ def hybrid_search_from_files(
         "query": query,
         "chunks_path": chunks_path,
         "index_path": index_path,
+        "project_id": project_id,
+        "vector_store_backend": vector_result.get("backend"),
         "keyword_top_k": keyword_top_k,
         "vector_top_k": vector_top_k,
         "final_top_k": final_top_k,

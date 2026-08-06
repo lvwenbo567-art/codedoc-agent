@@ -6,25 +6,25 @@
     "dimension": 1024,
     "normalized": true,
     "record_count": 26,
-    "created_at": "2026-07-22T09:15:40.418308+00:00",
+    "created_at": "2026-07-31T13:53:46.775660+00:00",
     "build_stats": {
       "chunk_count": 26,
       "vector_count": 26,
       "batch_size": 16,
-      "batch_count": 2,
-      "request_count": 2,
+      "batch_count": 0,
+      "request_count": 0,
       "retry_count": 0,
-      "duration_ms": 8148.59
+      "duration_ms": 0.16
     },
     "update_stats": {
       "total_chunk_count": 26,
-      "old_record_count": 0,
-      "reused_count": 0,
-      "new_count": 26,
+      "old_record_count": 26,
+      "reused_count": 26,
+      "new_count": 0,
       "updated_count": 0,
       "deleted_count": 0,
-      "embedded_chunk_count": 26,
-      "unique_embedding_count": 26,
+      "embedded_chunk_count": 0,
+      "unique_embedding_count": 0,
       "duplicate_content_count": 0,
       "deleted_chunk_ids": []
     }

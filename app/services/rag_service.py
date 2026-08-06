@@ -34,6 +34,7 @@ from pipelines.retrieval_pipeline import retrieve_with_rerank
 from services.vector_search_service import (
     search_vector_index_from_file,
 )
+from context_engineering.secure_context_builder import SecureContextBuilder
 
 
 def ask_from_vector_index(
@@ -149,6 +150,13 @@ def ask_from_vector_index(
     retrieved_chunks = retrieval_result[
         "results"
     ]
+
+    secure_context = SecureContextBuilder().build(
+        evidence_items=retrieved_chunks
+    )
+    retrieved_chunks = secure_context.selected_evidence
+    if not retrieved_chunks:
+        raise ValueError("安全上下文过滤后没有可用检索证据")
 
     messages = build_rag_messages(
         query=query,

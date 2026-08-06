@@ -3,15 +3,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from langchain_core.messages import AIMessage, BaseMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
 from langgraph.prebuilt import ToolNode#ToolNode 是 LangGraph 已经封装好的“工具执行节点”。
 from langgraph.types import Command, Overwrite#更新哪些状态，以及下一步去哪个节点。
 
 from langchain_agent.chat_service import extract_message_text
-from langchain_agent.message_window_middleware import select_message_window
+from context_engineering.context_budget import ContextBudgetConfig
+from context_engineering.message_selector import select_messages_by_budget
+from context_engineering.token_counter import ApproximateTokenCounter
 from langgraph_agent.tool_agent_dependencies import CodeDocToolAgentDependencies
 from langgraph_agent.tool_agent_state import CodeDocToolAgentState
 from langgraph_agent.tool_call_guard import evaluate_tool_calls
+from security.sensitive_data_redactor import SensitiveDataRedactor
 
 
 CODEDOC_TOOL_AGENT_SYSTEM_PROMPT = """
@@ -49,8 +52,26 @@ def _last_ai_message(messages: list[BaseMessage]) -> AIMessage | None:
     return None
 
 
+def redact_tool_messages(messages: list[BaseMessage]) -> list[BaseMessage]:
+    """在 Tool Result 再次交给模型前移除常见敏感凭据。"""
+    redactor = SensitiveDataRedactor()
+    sanitized: list[BaseMessage] = []
+    for message in messages:
+        if isinstance(message, ToolMessage):
+            sanitized.append(
+                message.model_copy(
+                    update={"content": redactor.redact(str(message.content)).text}
+                )
+            )
+        else:
+            sanitized.append(message)
+    return sanitized
+
+
 def _message_preview(message: BaseMessage, max_chars: int) -> dict[str, Any]:
-    content = str(getattr(message, "content", ""))
+    content = SensitiveDataRedactor().redact(
+        str(getattr(message, "content", ""))
+    ).text
     '''
     这个函数用于生成 trace。
     它把 LangChain Message 转成可 JSON 返回的 dict。
@@ -127,12 +148,14 @@ class CodeDocToolAgentNodes:
             }
 
         messages = list(state.get("messages") or [])
-        selected_messages = select_message_window(
+        selected_messages = select_messages_by_budget(
             messages=messages,
-            max_messages=self.dependencies.runtime.max_model_messages,
-        )
+            max_tokens=ContextBudgetConfig().max_message_tokens,
+            token_counter=ApproximateTokenCounter(),
+        ).messages
         model_messages = [
             SystemMessage(content=CODEDOC_TOOL_AGENT_SYSTEM_PROMPT),
+            *list(state.get("memory_context_messages") or []),
             *selected_messages,
         ]
 
@@ -246,11 +269,14 @@ class CodeDocToolAgentNodes:
         if isinstance(result, dict):
             return {
                 **result,
+                "messages": redact_tool_messages(
+                    list(result.get("messages") or [])
+                ),
                 "execution_steps": ["tools"],
             }
 
         return {
-            "messages": list(result or []),
+            "messages": redact_tool_messages(list(result or [])),
             "execution_steps": ["tools"],
         }
 

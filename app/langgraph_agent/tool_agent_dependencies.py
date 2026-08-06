@@ -26,6 +26,9 @@ class CodeDocToolAgentDependencies:
     allowed_tool_names: frozenset[str]#工具白名单
 
 
+    chat_model: Any | None = None
+
+
 def build_tool_agent_dependencies(
     *,
     runtime: ToolAgentRuntimeConfig,
@@ -82,6 +85,7 @@ def build_tool_agent_dependencies(
     return CodeDocToolAgentDependencies(
         runtime=runtime,
         model_config=effective_model_config,
+        chat_model=model,
         model_with_tools=model_with_tools,
         tools=tools,
         allowed_tool_names=allowed_tool_names,

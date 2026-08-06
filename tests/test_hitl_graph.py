@@ -57,7 +57,11 @@ def read_file_range(
 
 
 def _service(model: FakeToolCallingModel) -> HumanReviewToolAgentService:
-    runtime = ToolAgentRuntimeConfig(project_root=".")
+    # 此用例专门验证源码读取的审批/恢复流程；生产默认审批 run_project_tests。
+    runtime = ToolAgentRuntimeConfig(
+        project_root=".",
+        approval_required_tools=("read_file_range",),
+    )
     dependencies = CodeDocToolAgentDependencies(
         runtime=runtime,
         model_config=LangChainModelConfig(provider="mock"),

@@ -23,7 +23,6 @@ def _dependencies(
             project_root=".",
             enable_human_review=enable_human_review,
             approval_required_tools=(
-                "read_file_range",
                 "run_project_tests",
             ),
         ),
@@ -81,13 +80,12 @@ def test_normal_tool_routes_to_prepare_tools() -> None:
     assert command.update["approval_status"] == "not_required"
 
 
-def test_protected_tool_routes_to_human_review() -> None:
+def test_read_file_range_routes_to_prepare_tools_by_default() -> None:
     nodes = HumanReviewToolAgentNodes(dependencies=_dependencies())
     command = nodes.controller_node(_state_for_tool("read_file_range"))
 
-    assert command.goto == "human_review"
-    assert command.update["approval_status"] == "pending"
-    assert command.update["approval_request_id"]
+    assert command.goto == "prepare_tools"
+    assert command.update["approval_status"] == "not_required"
 
 
 def test_run_project_tests_routes_to_human_review() -> None:

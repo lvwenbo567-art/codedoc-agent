@@ -26,6 +26,7 @@ class StrictHITLAgentModel(BaseModel):
 
 
 class HITLAgentBaseRequest(StrictHITLAgentModel):
+    user_id: str = Field(default="local-user", min_length=1, max_length=120)
     project_id: int = Field(ge=1)
     thread_id: str = Field(min_length=1, max_length=120)
     project_root: str = Field(default=".", min_length=1, max_length=1000)
@@ -48,7 +49,6 @@ class HITLAgentBaseRequest(StrictHITLAgentModel):
     enable_human_review: bool = True
     approval_required_tools: list[str] = Field(
         default_factory=lambda: [
-            "read_file_range",
             "run_project_tests",
         ]
     )

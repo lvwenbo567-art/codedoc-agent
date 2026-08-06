@@ -88,6 +88,7 @@ async def start_human_review_agent(
             project_id=body.project_id,
             thread_id=body.thread_id,
             recursion_limit=body.recursion_limit,
+            user_id=body.user_id,
         )
 
         return HITLAgentResponse.model_validate(result)
@@ -112,6 +113,7 @@ async def resume_human_review_agent(
             thread_id=body.thread_id,
             decision=body.decision,
             recursion_limit=body.recursion_limit,
+            user_id=body.user_id,
         )
 
         return HITLAgentResponse.model_validate(result)

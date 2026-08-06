@@ -14,6 +14,9 @@ from langgraph_agent.persistent_tool_agent_service import (
 from langgraph_agent.tool_agent_config import ToolAgentRuntimeConfig
 from langgraph_agent.tool_agent_dependencies import build_tool_agent_dependencies
 from langgraph_agent.tool_agent_graph import build_codedoc_tool_agent_graph
+from memory.conversation_summary_service import ConversationSummaryService
+from memory.memory_context_service import MemoryAwareContextBuilder
+from memory.memory_repository import MemoryRepository
 
 
 class CheckpointRuntimeNotStartedError(RuntimeError):
@@ -31,8 +34,10 @@ class SQLiteCheckpointRuntime:
         self,
         *,
         config: CheckpointConfig,
+        memory_repository: MemoryRepository | None = None,
     ) -> None:
         self.config = config
+        self.memory_repository = memory_repository
         self._context_manager = None
         self._checkpointer: AsyncSqliteSaver | None = None
         self._service_cache: dict[str, PersistentCodeDocToolAgentService] = {}
@@ -142,6 +147,14 @@ class SQLiteCheckpointRuntime:
                 runtime=runtime,
                 model_config=model_config,
             )
+            memory_context_builder = None
+            if self.memory_repository is not None:
+                memory_context_builder = MemoryAwareContextBuilder(
+                    repository=self.memory_repository,
+                    summary_service=ConversationSummaryService(
+                        model=dependencies.chat_model,
+                    ),
+                )
             graph = build_codedoc_tool_agent_graph(
                 dependencies,
                 checkpointer=self.checkpointer,
@@ -150,6 +163,7 @@ class SQLiteCheckpointRuntime:
                 dependencies=dependencies,
                 graph=graph,
                 thread_lock_provider=self.get_thread_lock,
+                memory_context_builder=memory_context_builder,
             )
             self._service_cache[cache_key] = service
 
@@ -186,6 +200,14 @@ class SQLiteCheckpointRuntime:
                 runtime=runtime,
                 model_config=model_config,
             )
+            memory_context_builder = None
+            if self.memory_repository is not None:
+                memory_context_builder = MemoryAwareContextBuilder(
+                    repository=self.memory_repository,
+                    summary_service=ConversationSummaryService(
+                        model=dependencies.chat_model,
+                    ),
+                )
             invalid_approval_tools = (
                 set(runtime.approval_required_tools)
                 - set(dependencies.allowed_tool_names)
@@ -205,6 +227,7 @@ class SQLiteCheckpointRuntime:
                 dependencies=dependencies,
                 graph=graph,
                 thread_lock_provider=self.get_thread_lock,
+                memory_context_builder=memory_context_builder,
             )
             self._hitl_service_cache[cache_key] = service
 

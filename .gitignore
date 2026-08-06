@@ -26,7 +26,15 @@ logs/
 data/langgraph_checkpoints.sqlite
 data/langgraph_checkpoints.sqlite-shm
 data/langgraph_checkpoints.sqlite-wal
+data/uploaded_projects/
 
 # IDE
 .vscode/
 .idea/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Qdrant local data
+qdrant_storage/

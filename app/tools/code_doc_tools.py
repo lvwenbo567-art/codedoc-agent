@@ -36,6 +36,7 @@ from tools.registry import (
     ToolRegistry,
     ToolSpec,
 )
+from security.path_guard import SafePathConfig
 
 
 DEFAULT_IGNORED_DIRECTORIES = {
@@ -293,6 +294,7 @@ def _build_project_structure(
         )
 
     entries: list[dict] = []
+    path_config = SafePathConfig()
 
     def should_skip(path: Path) -> bool:
         if (
@@ -301,10 +303,16 @@ def _build_project_structure(
         ):
             return True
 
+        if path.name.lower() in path_config.blocked_names:
+            return True
+
+        if path.is_file() and path.suffix.lower() not in path_config.allowed_suffixes:
+            return True
+
         return (
             path.is_dir()
             and path.name
-            in DEFAULT_IGNORED_DIRECTORIES
+            in (DEFAULT_IGNORED_DIRECTORIES | path_config.blocked_directories)
         )
 
     def visit(

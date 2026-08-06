@@ -7,3 +7,4 @@ langchain>=1.1,<2
 langchain-openai>=1,<2
 langgraph-checkpoint-sqlite>=3.0.1
 aiosqlite
+qdrant-client>=1.18,<2

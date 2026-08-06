@@ -117,6 +117,38 @@ def test_read_file_range_normalizes_null_and_too_small_max_chars(tmp_path):
     assert "return sum" in small_result.data["content"]
 
 
+def test_read_file_range_accepts_workspace_relative_uploaded_source_path(tmp_path, monkeypatch):
+    workspace = tmp_path / "workspace"
+    project_root = workspace / "data" / "uploaded_projects" / "demo_123" / "project"
+    project_root.mkdir(parents=True)
+    source_file = project_root / "example.py"
+    source_file.write_text(
+        "def hello():\n    return 'world'\n",
+        encoding="utf-8",
+    )
+    chunks_path = tmp_path / "chunks.json"
+    chunks_path.write_text("[]", encoding="utf-8")
+    monkeypatch.chdir(workspace)
+    registry = build_navigation_registry(
+        project_root=project_root,
+        chunks_path=chunks_path,
+    )
+
+    result = ToolExecutor(registry).execute(
+        tool_name="read_file_range",
+        arguments={
+            "source_path": "data/uploaded_projects/demo_123/project/example.py",
+            "start_line": 1,
+            "end_line": 2,
+            "max_chars": 1000,
+        },
+    )
+
+    assert result.success is True
+    assert "def hello" in result.data["content"]
+    assert result.data["source_path"] == "data/uploaded_projects/demo_123/project/example.py"
+
+
 def test_read_file_rejects_path_traversal(tmp_path):
     chunks_path = tmp_path / "chunks.json"
     chunks_path.write_text("[]", encoding="utf-8")

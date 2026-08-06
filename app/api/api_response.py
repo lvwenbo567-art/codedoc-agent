@@ -1,5 +1,19 @@
 from typing import Any, Dict, Optional
 
+from fastapi.responses import JSONResponse
+
+
+class UTF8JSONResponse(JSONResponse):
+    """
+    统一使用 UTF-8 字符集返回 JSON。
+
+    FastAPI/Starlette 默认的 JSON 响应头通常只有 application/json。
+    大多数客户端会按 JSON 规范将其当作 UTF-8，但 Windows PowerShell
+    在部分版本中会按本地代码页解码未声明 charset 的响应，导致中文乱码。
+    """
+
+    media_type = "application/json; charset=utf-8"
+
 
 def success_response(data: Any = None) -> Dict[str, Any]:
     """

@@ -15,6 +15,7 @@ from langgraph_agent.thread_identity import build_effective_thread_id
 from langgraph_agent.tool_agent_dependencies import CodeDocToolAgentDependencies
 from langgraph_agent.tool_agent_service import serialize_agent_messages
 from langgraph_agent.tool_agent_state import CodeDocToolAgentState
+from memory.memory_context_service import MemoryAwareContextBuilder
 
 
 class HumanReviewAgentExecutionError(RuntimeError):
@@ -88,10 +89,12 @@ class HumanReviewToolAgentService:
         dependencies: CodeDocToolAgentDependencies,
         graph: Any,
         thread_lock_provider: ThreadLockProvider,
+        memory_context_builder: MemoryAwareContextBuilder | None = None,
     ) -> None:
         self.dependencies = dependencies
         self.graph = graph
         self.thread_lock_provider = thread_lock_provider
+        self.memory_context_builder = memory_context_builder
 
     def build_config(
         self,
@@ -127,6 +130,7 @@ class HumanReviewToolAgentService:
         thread_id: str,
         effective_thread_id: str,
         run_id: str,
+        memory_context_messages: list[Any] | None = None,
     ) -> CodeDocToolAgentState:
         normalized_query = query.strip()
 
@@ -141,6 +145,7 @@ class HumanReviewToolAgentService:
             run_id=run_id,
             thread_id=thread_id,
             effective_thread_id=effective_thread_id,
+            memory_context_messages=list(memory_context_messages or []),
             messages=[HumanMessage(content=normalized_query)],
             max_model_calls=runtime.max_model_calls,
             max_tool_calls=runtime.max_tool_calls,
@@ -270,18 +275,30 @@ class HumanReviewToolAgentService:
         project_id: int,
         thread_id: str,
         recursion_limit: int,
+        user_id: str = "local-user",
     ) -> dict[str, Any]:
         effective_thread_id = build_effective_thread_id(
             project_id=project_id,
             thread_id=thread_id,
         )
         run_id = f"run_{uuid.uuid4().hex}"
+        memory_context_messages: list[Any] = []
+        if self.memory_context_builder is not None:
+            context = await self.memory_context_builder.load_context(
+                user_id=user_id,
+                project_id=project_id,
+                thread_id=thread_id,
+                effective_thread_id=effective_thread_id,
+                query=query,
+            )
+            memory_context_messages = context.to_system_messages()
         graph_input = self.build_turn_input(
             query=query,
             project_id=project_id,
             thread_id=thread_id,
             effective_thread_id=effective_thread_id,
             run_id=run_id,
+            memory_context_messages=memory_context_messages,
         )
         config = self.build_config(
             project_id=project_id,
@@ -307,7 +324,7 @@ class HumanReviewToolAgentService:
             except Exception as exc:
                 raise HumanReviewAgentExecutionError(str(exc)) from exc
 
-            return await self._normalize_result(
+            normalized = await self._normalize_result(
                 result=result,
                 config=config,
                 query=query,
@@ -317,6 +334,17 @@ class HumanReviewToolAgentService:
                 run_id=run_id,
                 started=started,
             )
+            if self.memory_context_builder is not None and normalized["success"]:
+                snapshot = await self._aget_state(config=config)
+                values = getattr(snapshot, "values", {}) or {}
+                await self.memory_context_builder.update_after_completed_turn(
+                    user_id=user_id,
+                    project_id=project_id,
+                    thread_id=thread_id,
+                    effective_thread_id=effective_thread_id,
+                    messages=list(values.get("messages") or []),
+                )
+            return normalized
 
     async def resume(
         self,
@@ -325,6 +353,7 @@ class HumanReviewToolAgentService:
         thread_id: str,
         decision: HumanReviewDecision,
         recursion_limit: int,
+        user_id: str = "local-user",
     ) -> dict[str, Any]:
         effective_thread_id = build_effective_thread_id(
             project_id=project_id,
@@ -372,7 +401,7 @@ class HumanReviewToolAgentService:
             except Exception as exc:
                 raise HumanReviewAgentExecutionError(str(exc)) from exc
 
-            return await self._normalize_result(
+            normalized = await self._normalize_result(
                 result=result,
                 config=config,
                 query=query,
@@ -382,3 +411,14 @@ class HumanReviewToolAgentService:
                 run_id=run_id,
                 started=started,
             )
+            if self.memory_context_builder is not None and normalized["success"]:
+                snapshot = await self._aget_state(config=config)
+                values = getattr(snapshot, "values", {}) or {}
+                await self.memory_context_builder.update_after_completed_turn(
+                    user_id=user_id,
+                    project_id=project_id,
+                    thread_id=thread_id,
+                    effective_thread_id=effective_thread_id,
+                    messages=list(values.get("messages") or []),
+                )
+            return normalized

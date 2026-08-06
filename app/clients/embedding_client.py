@@ -204,6 +204,9 @@ class EmbeddingClient:
             if not all(isinstance(value, (int, float)) for value in vector):
                 raise ValueError("Embedding 向量包含非法值")
 
+            if not all(math.isfinite(float(value)) for value in vector):
+                raise ValueError("Embedding 向量包含 NaN 或 Infinity")
+
     def _embed_mock(
         self,
         text: str,
@@ -242,10 +245,27 @@ class EmbeddingClient:
             "input": texts,
         }
 
-        data = self._post_json(
-            url=url,
-            payload=payload,
-        )
+        try:
+            data = self._post_json(
+                url=url,
+                payload=payload,
+            )
+        except RuntimeError as exc:
+            if not self._is_ollama_nan_response_error(exc):
+                raise
+
+            retry_payload = {
+                "model": self.config.model_name,
+                "input": [
+                    self._build_ollama_safe_embedding_text(text)
+                    for text in texts
+                ],
+            }
+
+            data = self._post_json(
+                url=url,
+                payload=retry_payload,
+            )
 
         embeddings = data.get("embeddings")
 
@@ -253,6 +273,35 @@ class EmbeddingClient:
             raise ValueError("Ollama Embedding 返回中缺少 embeddings")
 
         return embeddings
+
+    def _is_ollama_nan_response_error(
+        self,
+        exc: RuntimeError,
+    ) -> bool:
+        """
+        判断 Ollama 是否因为返回 NaN 向量导致 JSON 编码失败。
+        """
+        message = str(exc)
+
+        return (
+            "unsupported value: NaN" in message
+            or "failed to encode response" in message
+        )
+
+    def _build_ollama_safe_embedding_text(
+        self,
+        text: str,
+    ) -> str:
+        """
+        为 Ollama Embedding 构造更稳定的输入文本。
+
+        bge 系列模型通常接受 passage 前缀；当原始短代码摘要触发
+        Ollama NaN 响应时，追加前缀可以避开模型的边界输入。
+        """
+        if text.startswith("passage: "):
+            return text
+
+        return f"passage: {text}"
 
     def _embed_openai_compatible(
         self,

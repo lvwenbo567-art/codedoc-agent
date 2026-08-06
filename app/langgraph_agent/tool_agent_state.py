@@ -80,6 +80,7 @@ class CodeDocToolAgentState(TypedDict, total=False):
     run_id: str
     thread_id: str
     effective_thread_id: str
+    memory_context_messages: list[BaseMessage]
     turn_index: int
     messages: Annotated[list[BaseMessage], add_messages]
     model_call_count: int

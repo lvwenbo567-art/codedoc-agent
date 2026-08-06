@@ -26,6 +26,7 @@ class StrictPersistentAgentModel(BaseModel):
 
 class PersistentAgentRequest(StrictPersistentAgentModel):
     query: str = Field(min_length=1, max_length=3000)
+    user_id: str = Field(default="local-user", min_length=1, max_length=120)
     project_id: int = Field(ge=1)
     thread_id: str = Field(min_length=1, max_length=120)
 

@@ -79,7 +79,6 @@ class ToolAgentRuntimeConfig(BaseModel):
     rerank_local_files_only: bool = DEFAULT_RERANK_LOCAL_FILES_ONLY
     enable_human_review: bool = True
     approval_required_tools: tuple[str, ...] = (
-        "read_file_range",
         "run_project_tests",
     )
 

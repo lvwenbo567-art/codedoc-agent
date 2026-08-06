@@ -117,6 +117,8 @@ class VectorSearchRequest(BaseModel):
     """
 
     index_path: str = DEFAULT_VECTOR_INDEX_PATH
+    project_id: int = Field(default=1, gt=0)
+    vector_store_backend: str | None = None
     query: str
     top_k: int = 5
     embedding_provider: EmbeddingProvider = DEFAULT_EMBEDDING_PROVIDER
@@ -140,6 +142,8 @@ class HybridSearchRequest(BaseModel):
     """
 
     query: str
+    project_id: int = Field(default=1, gt=0)
+    vector_store_backend: str | None = None
     chunks_path: str = "outputs/chunks.json"
     index_path: str = DEFAULT_VECTOR_INDEX_PATH
     keyword_top_k: int = Field(default=10, gt=0)
