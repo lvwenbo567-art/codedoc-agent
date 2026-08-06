@@ -39,3 +39,63 @@ def calculate_reciprocal_rank(
             return 1.0 / rank
 
     return 0.0
+
+
+def calculate_recall_at_k(
+    results: list[dict],
+    expected_chunk_ids: list[str],
+    k: int,
+) -> float:
+    """
+    计算 Recall@K：Top-K 命中的正确 chunk 数 / 正确 chunk 总数。
+    """
+    if k <= 0:
+        raise ValueError("k 必须大于 0")
+
+    if not expected_chunk_ids:
+        return 0.0
+
+    expected = set(expected_chunk_ids)
+    retrieved = set(extract_chunk_ids(results)[:k])
+
+    return len(expected & retrieved) / len(expected)
+
+
+def calculate_ndcg_at_k(
+    results: list[dict],
+    expected_chunk_ids: list[str],
+    k: int,
+) -> float:
+    """
+    计算二值相关性的 NDCG@K。
+    """
+    if k <= 0:
+        raise ValueError("k 必须大于 0")
+
+    if not expected_chunk_ids:
+        return 0.0
+
+    expected = set(expected_chunk_ids)
+    gains: list[float] = []
+
+    for index, result in enumerate(results[:k], start=1):
+        relevance = 1.0 if result["chunk_id"] in expected else 0.0
+        gains.append(relevance / _log2(index + 1))
+
+    dcg = sum(gains)
+    ideal_hits = min(len(expected), k)
+    ideal_dcg = sum(
+        1.0 / _log2(index + 1)
+        for index in range(1, ideal_hits + 1)
+    )
+
+    if ideal_dcg == 0:
+        return 0.0
+
+    return dcg / ideal_dcg
+
+
+def _log2(value: int) -> float:
+    import math
+
+    return math.log2(value)

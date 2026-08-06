@@ -1,0 +1,228 @@
+{
+  "case_count": 14,
+  "chunk_count": 26,
+  "summary": {
+    "structure_preservation_rate": 1.0,
+    "average_candidate_count": 3.142857142857143
+  },
+  "cases": [
+    {
+      "case_id": "chunk-function-keyword-score",
+      "name": "keyword_score 被保留为函数级 chunk",
+      "source_path": "test_project\\search.py",
+      "expected": {
+        "chunk_type": "code",
+        "code_unit_type": "function",
+        "symbol_name": "keyword_score",
+        "qualified_name": "keyword_score"
+      },
+      "candidate_count": 3,
+      "matched_chunk_id": "test_project\\search.py::keyword_score::part_0",
+      "matched": true,
+      "matched_length": 309,
+      "matched_parser": "python_ast"
+    },
+    {
+      "case_id": "chunk-function-search-documents",
+      "name": "search_documents 被保留为函数级 chunk",
+      "source_path": "test_project\\search.py",
+      "expected": {
+        "chunk_type": "code",
+        "code_unit_type": "function",
+        "symbol_name": "search_documents",
+        "qualified_name": "search_documents"
+      },
+      "candidate_count": 3,
+      "matched_chunk_id": "test_project\\search.py::search_documents::part_0",
+      "matched": true,
+      "matched_length": 646,
+      "matched_parser": "python_ast"
+    },
+    {
+      "case_id": "chunk-class-calculator",
+      "name": "Calculator 被保留为类级 chunk",
+      "source_path": "test_project\\utils.py",
+      "expected": {
+        "chunk_type": "code",
+        "code_unit_type": "class",
+        "symbol_name": "Calculator",
+        "qualified_name": "Calculator"
+      },
+      "candidate_count": 3,
+      "matched_chunk_id": "test_project\\utils.py::Calculator::part_0",
+      "matched": true,
+      "matched_length": 95,
+      "matched_parser": "python_ast"
+    },
+    {
+      "case_id": "chunk-method-calculator-add",
+      "name": "Calculator.add 被保留为方法级 chunk",
+      "source_path": "test_project\\utils.py",
+      "expected": {
+        "chunk_type": "code",
+        "code_unit_type": "method",
+        "symbol_name": "add",
+        "qualified_name": "Calculator.add"
+      },
+      "candidate_count": 3,
+      "matched_chunk_id": "test_project\\utils.py::Calculator.add::part_0",
+      "matched": true,
+      "matched_length": 104,
+      "matched_parser": "python_ast"
+    },
+    {
+      "case_id": "chunk-function-multiply",
+      "name": "multiply 被保留为函数级 chunk",
+      "source_path": "test_project\\utils.py",
+      "expected": {
+        "chunk_type": "code",
+        "code_unit_type": "function",
+        "symbol_name": "multiply",
+        "qualified_name": "multiply"
+      },
+      "candidate_count": 3,
+      "matched_chunk_id": "test_project\\utils.py::multiply::part_0",
+      "matched": true,
+      "matched_length": 84,
+      "matched_parser": "python_ast"
+    },
+    {
+      "case_id": "chunk-api-health-check",
+      "name": "health_check 被保留为函数级 chunk",
+      "source_path": "test_project\\api.py",
+      "expected": {
+        "chunk_type": "code",
+        "code_unit_type": "function",
+        "symbol_name": "health_check",
+        "qualified_name": "health_check"
+      },
+      "candidate_count": 6,
+      "matched_chunk_id": "test_project\\api.py::health_check::part_0",
+      "matched": true,
+      "matched_length": 135,
+      "matched_parser": "python_ast"
+    },
+    {
+      "case_id": "chunk-api-list-chunks",
+      "name": "list_chunks_api 被保留为函数级 chunk",
+      "source_path": "test_project\\api.py",
+      "expected": {
+        "chunk_type": "code",
+        "code_unit_type": "function",
+        "symbol_name": "list_chunks_api",
+        "qualified_name": "list_chunks_api"
+      },
+      "candidate_count": 6,
+      "matched_chunk_id": "test_project\\api.py::list_chunks_api::part_0",
+      "matched": true,
+      "matched_length": 198,
+      "matched_parser": "python_ast"
+    },
+    {
+      "case_id": "chunk-database-init",
+      "name": "init_database 被保留为函数级 chunk",
+      "source_path": "test_project\\database.py",
+      "expected": {
+        "chunk_type": "code",
+        "code_unit_type": "function",
+        "symbol_name": "init_database",
+        "qualified_name": "init_database"
+      },
+      "candidate_count": 4,
+      "matched_chunk_id": "test_project\\database.py::init_database::part_0",
+      "matched": true,
+      "matched_length": 274,
+      "matched_parser": "python_ast"
+    },
+    {
+      "case_id": "chunk-database-list-chunks",
+      "name": "list_chunks 被保留为函数级 chunk",
+      "source_path": "test_project\\database.py",
+      "expected": {
+        "chunk_type": "code",
+        "code_unit_type": "function",
+        "symbol_name": "list_chunks",
+        "qualified_name": "list_chunks"
+      },
+      "candidate_count": 4,
+      "matched_chunk_id": "test_project\\database.py::list_chunks::part_0",
+      "matched": true,
+      "matched_length": 255,
+      "matched_parser": "python_ast"
+    },
+    {
+      "case_id": "chunk-config-runtime",
+      "name": "get_runtime_config 被保留为函数级 chunk",
+      "source_path": "test_project\\config.py",
+      "expected": {
+        "chunk_type": "code",
+        "code_unit_type": "function",
+        "symbol_name": "get_runtime_config",
+        "qualified_name": "get_runtime_config"
+      },
+      "candidate_count": 3,
+      "matched_chunk_id": "test_project\\config.py::get_runtime_config::part_0",
+      "matched": true,
+      "matched_length": 221,
+      "matched_parser": "python_ast"
+    },
+    {
+      "case_id": "chunk-logger-setup",
+      "name": "setup_logger 被保留为函数级 chunk",
+      "source_path": "test_project\\logger.py",
+      "expected": {
+        "chunk_type": "code",
+        "code_unit_type": "function",
+        "symbol_name": "setup_logger",
+        "qualified_name": "setup_logger"
+      },
+      "candidate_count": 2,
+      "matched_chunk_id": "test_project\\logger.py::setup_logger::part_0",
+      "matched": true,
+      "matched_length": 445,
+      "matched_parser": "python_ast"
+    },
+    {
+      "case_id": "chunk-main-entry",
+      "name": "main 被保留为函数级 chunk",
+      "source_path": "test_project\\main.py",
+      "expected": {
+        "chunk_type": "code",
+        "code_unit_type": "function",
+        "symbol_name": "main",
+        "qualified_name": "main"
+      },
+      "candidate_count": 2,
+      "matched_chunk_id": "test_project\\main.py::main::part_0",
+      "matched": true,
+      "matched_length": 138,
+      "matched_parser": "python_ast"
+    },
+    {
+      "case_id": "chunk-readme-document",
+      "name": "README 被保留为文档 chunk",
+      "source_path": "test_project\\README.md",
+      "expected": {
+        "chunk_type": "document"
+      },
+      "candidate_count": 1,
+      "matched_chunk_id": "test_project\\README.md::document::0",
+      "matched": true,
+      "matched_length": 63,
+      "matched_parser": "text"
+    },
+    {
+      "case_id": "chunk-usage-document",
+      "name": "usage.md 被保留为文档 chunk",
+      "source_path": "test_project\\docs\\usage.md",
+      "expected": {
+        "chunk_type": "document"
+      },
+      "candidate_count": 1,
+      "matched_chunk_id": "test_project\\docs\\usage.md::document::0",
+      "matched": true,
+      "matched_length": 596,
+      "matched_parser": "text"
+    }
+  ]
+}

@@ -7,6 +7,8 @@ sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
 from evaluation.retrieval_metrics import (
     calculate_hit_at_k,
+    calculate_ndcg_at_k,
+    calculate_recall_at_k,
     calculate_reciprocal_rank,
     extract_chunk_ids,
 )
@@ -78,3 +80,27 @@ def test_calculate_reciprocal_rank_returns_zero_when_not_found():
     ]
 
     assert calculate_reciprocal_rank(results, ["expected"]) == 0.0
+
+
+def test_calculate_recall_at_k_counts_expected_hits():
+    results = [
+        {"chunk_id": "a"},
+        {"chunk_id": "b"},
+        {"chunk_id": "c"},
+    ]
+
+    assert calculate_recall_at_k(results, ["a", "c"], k=2) == 0.5
+
+
+def test_calculate_ndcg_at_k_rewards_better_ranking():
+    good_results = [
+        {"chunk_id": "expected"},
+        {"chunk_id": "other"},
+    ]
+    weak_results = [
+        {"chunk_id": "other"},
+        {"chunk_id": "expected"},
+    ]
+
+    assert calculate_ndcg_at_k(good_results, ["expected"], k=2) == 1.0
+    assert calculate_ndcg_at_k(weak_results, ["expected"], k=2) < 1.0

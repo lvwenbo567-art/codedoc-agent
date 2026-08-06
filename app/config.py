@@ -1,6 +1,16 @@
 import os
 
-SUPPORTED_SUFFIXES = {".md", ".txt", ".py"}
+SUPPORTED_SUFFIXES = {
+    ".py",
+    ".md",
+    ".txt",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".ini",
+    ".cfg",
+}
 
 DEFAULT_CHUNK_SIZE = 500
 DEFAULT_CHUNK_OVERLAP = 100

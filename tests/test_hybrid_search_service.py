@@ -176,3 +176,8 @@ def test_hybrid_search_from_files_with_mock_embedding(tmp_path):
     assert result["vector_result_count"] <= 2
     assert result["results"][0]["rank"] == 1
     assert "final_score" in result["results"][0]
+    assert any(
+        item.get("keyword_score_type") == "bm25"
+        for item in result["results"]
+        if "keyword" in item["matched_by"]
+    )

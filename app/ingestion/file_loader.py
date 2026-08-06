@@ -3,8 +3,6 @@ from typing import Dict, List
 from config import SUPPORTED_SUFFIXES
 from utils.document_schema import ProjectFile
 
-SUPPORTED_SUFFIXES={".md",".txt",".py"}
-
 def scan_project_files(project_path: str) -> List[Path]:
      """
     扫描项目目录，返回支持的文件路径列表。
@@ -37,7 +35,7 @@ def read_text_file(file_path:Path) ->str:
 
 def load_project_files(project_path: str) -> List[Dict]:
     """
-    加载项目中的 .md / .txt / .py 文件。
+    加载项目中的受支持文本、配置和 Python 文件。
     """
     paths = scan_project_files(project_path)
 

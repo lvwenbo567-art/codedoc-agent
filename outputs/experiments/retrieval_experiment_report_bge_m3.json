@@ -1,0 +1,672 @@
+{
+  "top_k": 5,
+  "method_count": 5,
+  "case_count": 6,
+  "methods": [
+    {
+      "method": "bm25",
+      "case_count": 6,
+      "summary": {
+        "hit_at_k": 1.0,
+        "recall_at_k": 0.8333333333333334,
+        "mrr": 0.7777777777777778,
+        "ndcg_at_k": 0.7483937513505846,
+        "average_latency_ms": 0.7999999999999999,
+        "p95_latency_ms": 0.98
+      },
+      "cases": [
+        {
+          "case_id": "code-keyword-score",
+          "query": "keyword_score 函数在哪里定义？它的作用是什么？",
+          "expected_chunk_ids": [
+            "test_project\\search.py::keyword_score::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\search.py::keyword_score::part_0",
+            "test_project\\README.md::document::0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\api.py::__module__::part_0",
+            "test_project\\search.py::search_documents::part_0"
+          ],
+          "latency_ms": 0.98,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "case_id": "api-list-chunks",
+          "query": "如何查询 chunks？",
+          "expected_chunk_ids": [
+            "test_project\\api.py::list_chunks_api::part_0",
+            "test_project\\database.py::list_chunks::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\api.py::__module__::part_0",
+            "test_project\\tests\\test_calculator.md::document::0",
+            "test_project\\api.py::list_chunks_api::part_0",
+            "test_project\\database.py::list_chunks::part_0",
+            "test_project\\docs\\usage.md::document::0"
+          ],
+          "latency_ms": 0.77,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 0.3333333333333333,
+          "ndcg_at_k": 0.5706417189553201
+        },
+        {
+          "case_id": "startup-flow",
+          "query": "项目启动时会初始化哪些内容？",
+          "expected_chunk_ids": [
+            "test_project\\api.py::startup::part_0",
+            "test_project\\database.py::init_database::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\api.py::startup::part_0",
+            "test_project\\config.py::get_runtime_config::part_0",
+            "test_project\\api.py::__module__::part_0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\logger.py::__module__::part_0"
+          ],
+          "latency_ms": 0.78,
+          "hit_at_k": 1.0,
+          "recall_at_k": 0.5,
+          "mrr": 1.0,
+          "ndcg_at_k": 0.6131471927654584
+        },
+        {
+          "case_id": "runtime-config",
+          "query": "运行时配置在哪里定义？",
+          "expected_chunk_ids": [
+            "test_project\\config.py::get_runtime_config::part_0",
+            "test_project\\config.py::__module__::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\config.py::get_runtime_config::part_0",
+            "test_project\\config.py::__module__::part_0",
+            "test_project\\logger.py::__module__::part_0",
+            "test_project\\api.py::__module__::part_0",
+            "test_project\\docs\\usage.md::document::0"
+          ],
+          "latency_ms": 0.74,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "case_id": "calculator-add",
+          "query": "Calculator.add 方法做什么？",
+          "expected_chunk_ids": [
+            "test_project\\utils.py::Calculator.add::part_0",
+            "test_project\\utils.py::Calculator::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\main.py::main::part_0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\utils.py::Calculator::part_0",
+            "test_project\\tests\\test_calculator.md::document::0",
+            "test_project\\api.py::__module__::part_0"
+          ],
+          "latency_ms": 0.74,
+          "hit_at_k": 1.0,
+          "recall_at_k": 0.5,
+          "mrr": 0.3333333333333333,
+          "ndcg_at_k": 0.3065735963827292
+        },
+        {
+          "case_id": "usage-doc-start",
+          "query": "README 或使用文档里有没有说明项目用途？",
+          "expected_chunk_ids": [
+            "test_project\\README.md::document::0",
+            "test_project\\docs\\usage.md::document::0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\README.md::document::0",
+            "test_project\\api.py::__module__::part_0",
+            "test_project\\tests\\test_calculator.md::document::0",
+            "test_project\\config.py::__module__::part_0"
+          ],
+          "latency_ms": 0.79,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 1.0
+        }
+      ]
+    },
+    {
+      "method": "vector",
+      "case_count": 6,
+      "summary": {
+        "hit_at_k": 1.0,
+        "recall_at_k": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_k": 0.9661560174143728,
+        "average_latency_ms": 3614.471666666667,
+        "p95_latency_ms": 8166.58
+      },
+      "cases": [
+        {
+          "case_id": "code-keyword-score",
+          "query": "keyword_score 函数在哪里定义？它的作用是什么？",
+          "expected_chunk_ids": [
+            "test_project\\search.py::keyword_score::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\search.py::keyword_score::part_0",
+            "test_project\\search.py::search_documents::part_0",
+            "test_project\\search.py::__module__::part_0",
+            "test_project\\tests\\test_calculator.md::document::0",
+            "test_project\\api.py::health_check::part_0"
+          ],
+          "latency_ms": 8166.58,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "case_id": "api-list-chunks",
+          "query": "如何查询 chunks？",
+          "expected_chunk_ids": [
+            "test_project\\api.py::list_chunks_api::part_0",
+            "test_project\\database.py::list_chunks::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\api.py::list_chunks_api::part_0",
+            "test_project\\tests\\test_calculator.md::document::0",
+            "test_project\\database.py::list_chunks::part_0",
+            "test_project\\api.py::__module__::part_0",
+            "test_project\\docs\\usage.md::document::0"
+          ],
+          "latency_ms": 2389.63,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 0.9197207891481876
+        },
+        {
+          "case_id": "startup-flow",
+          "query": "项目启动时会初始化哪些内容？",
+          "expected_chunk_ids": [
+            "test_project\\api.py::startup::part_0",
+            "test_project\\database.py::init_database::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\api.py::startup::part_0",
+            "test_project\\database.py::init_database::part_0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\logger.py::setup_logger::part_0",
+            "test_project\\logger.py::__module__::part_0"
+          ],
+          "latency_ms": 2396.75,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "case_id": "runtime-config",
+          "query": "运行时配置在哪里定义？",
+          "expected_chunk_ids": [
+            "test_project\\config.py::get_runtime_config::part_0",
+            "test_project\\config.py::__module__::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\config.py::get_runtime_config::part_0",
+            "test_project\\config.py::__module__::part_0",
+            "test_project\\api.py::startup::part_0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\logger.py::setup_logger::part_0"
+          ],
+          "latency_ms": 4002.82,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "case_id": "calculator-add",
+          "query": "Calculator.add 方法做什么？",
+          "expected_chunk_ids": [
+            "test_project\\utils.py::Calculator.add::part_0",
+            "test_project\\utils.py::Calculator::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\utils.py::Calculator::part_0",
+            "test_project\\main.py::main::part_0",
+            "test_project\\main.py::__module__::part_0",
+            "test_project\\utils.py::Calculator.add::part_0",
+            "test_project\\docs\\usage.md::document::0"
+          ],
+          "latency_ms": 2362.73,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 0.8772153153380493
+        },
+        {
+          "case_id": "usage-doc-start",
+          "query": "README 或使用文档里有没有说明项目用途？",
+          "expected_chunk_ids": [
+            "test_project\\README.md::document::0",
+            "test_project\\docs\\usage.md::document::0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\README.md::document::0",
+            "test_project\\search.py::__module__::part_0",
+            "test_project\\api.py::get_project_info::part_0",
+            "test_project\\api.py::__module__::part_0"
+          ],
+          "latency_ms": 2368.32,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 1.0
+        }
+      ]
+    },
+    {
+      "method": "hybrid",
+      "case_count": 6,
+      "summary": {
+        "hit_at_k": 1.0,
+        "recall_at_k": 1.0,
+        "mrr": 0.9166666666666666,
+        "ndcg_at_k": 0.9168776392236478,
+        "average_latency_ms": 2383.0033333333336,
+        "p95_latency_ms": 2408.06
+      },
+      "cases": [
+        {
+          "case_id": "code-keyword-score",
+          "query": "keyword_score 函数在哪里定义？它的作用是什么？",
+          "expected_chunk_ids": [
+            "test_project\\search.py::keyword_score::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\search.py::keyword_score::part_0",
+            "test_project\\search.py::search_documents::part_0",
+            "test_project\\README.md::document::0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\search.py::__module__::part_0"
+          ],
+          "latency_ms": 2408.06,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "case_id": "api-list-chunks",
+          "query": "如何查询 chunks？",
+          "expected_chunk_ids": [
+            "test_project\\api.py::list_chunks_api::part_0",
+            "test_project\\database.py::list_chunks::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\tests\\test_calculator.md::document::0",
+            "test_project\\api.py::list_chunks_api::part_0",
+            "test_project\\api.py::__module__::part_0",
+            "test_project\\database.py::list_chunks::part_0",
+            "test_project\\docs\\usage.md::document::0"
+          ],
+          "latency_ms": 2407.45,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "ndcg_at_k": 0.6509209298071326
+        },
+        {
+          "case_id": "startup-flow",
+          "query": "项目启动时会初始化哪些内容？",
+          "expected_chunk_ids": [
+            "test_project\\api.py::startup::part_0",
+            "test_project\\database.py::init_database::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\api.py::startup::part_0",
+            "test_project\\database.py::init_database::part_0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\logger.py::setup_logger::part_0",
+            "test_project\\logger.py::__module__::part_0"
+          ],
+          "latency_ms": 2393.63,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "case_id": "runtime-config",
+          "query": "运行时配置在哪里定义？",
+          "expected_chunk_ids": [
+            "test_project\\config.py::get_runtime_config::part_0",
+            "test_project\\config.py::__module__::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\config.py::get_runtime_config::part_0",
+            "test_project\\config.py::__module__::part_0",
+            "test_project\\api.py::startup::part_0",
+            "test_project\\logger.py::__module__::part_0",
+            "test_project\\docs\\usage.md::document::0"
+          ],
+          "latency_ms": 2379.57,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "case_id": "calculator-add",
+          "query": "Calculator.add 方法做什么？",
+          "expected_chunk_ids": [
+            "test_project\\utils.py::Calculator.add::part_0",
+            "test_project\\utils.py::Calculator::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\utils.py::Calculator::part_0",
+            "test_project\\main.py::main::part_0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\main.py::__module__::part_0",
+            "test_project\\utils.py::Calculator.add::part_0"
+          ],
+          "latency_ms": 2355.46,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 0.8503449055347546
+        },
+        {
+          "case_id": "usage-doc-start",
+          "query": "README 或使用文档里有没有说明项目用途？",
+          "expected_chunk_ids": [
+            "test_project\\README.md::document::0",
+            "test_project\\docs\\usage.md::document::0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\README.md::document::0",
+            "test_project\\api.py::__module__::part_0",
+            "test_project\\config.py::__module__::part_0",
+            "test_project\\search.py::__module__::part_0"
+          ],
+          "latency_ms": 2353.85,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 1.0
+        }
+      ]
+    },
+    {
+      "method": "hybrid_rerank",
+      "case_count": 6,
+      "summary": {
+        "hit_at_k": 1.0,
+        "recall_at_k": 0.9166666666666666,
+        "mrr": 0.7916666666666666,
+        "ndcg_at_k": 0.7745468350034986,
+        "average_latency_ms": 13201.491666666667,
+        "p95_latency_ms": 51788.5
+      },
+      "cases": [
+        {
+          "case_id": "code-keyword-score",
+          "query": "keyword_score 函数在哪里定义？它的作用是什么？",
+          "expected_chunk_ids": [
+            "test_project\\search.py::keyword_score::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\search.py::keyword_score::part_0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\search.py::search_documents::part_0",
+            "test_project\\search.py::__module__::part_0",
+            "test_project\\tests\\test_calculator.md::document::0"
+          ],
+          "latency_ms": 51788.5,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "case_id": "api-list-chunks",
+          "query": "如何查询 chunks？",
+          "expected_chunk_ids": [
+            "test_project\\api.py::list_chunks_api::part_0",
+            "test_project\\database.py::list_chunks::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\tests\\test_calculator.md::document::0",
+            "test_project\\database.py::list_chunks::part_0",
+            "test_project\\api.py::list_chunks_api::part_0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\api.py::__module__::part_0"
+          ],
+          "latency_ms": 5458.93,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "ndcg_at_k": 0.6934264036172708
+        },
+        {
+          "case_id": "startup-flow",
+          "query": "项目启动时会初始化哪些内容？",
+          "expected_chunk_ids": [
+            "test_project\\api.py::startup::part_0",
+            "test_project\\database.py::init_database::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\api.py::startup::part_0",
+            "test_project\\config.py::get_runtime_config::part_0",
+            "test_project\\database.py::init_database::part_0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\logger.py::__module__::part_0"
+          ],
+          "latency_ms": 5470.47,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 0.9197207891481876
+        },
+        {
+          "case_id": "runtime-config",
+          "query": "运行时配置在哪里定义？",
+          "expected_chunk_ids": [
+            "test_project\\config.py::get_runtime_config::part_0",
+            "test_project\\config.py::__module__::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\config.py::get_runtime_config::part_0",
+            "test_project\\api.py::startup::part_0",
+            "test_project\\config.py::__module__::part_0",
+            "test_project\\database.py::init_database::part_0",
+            "test_project\\docs\\usage.md::document::0"
+          ],
+          "latency_ms": 5468.46,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 0.9197207891481876
+        },
+        {
+          "case_id": "calculator-add",
+          "query": "Calculator.add 方法做什么？",
+          "expected_chunk_ids": [
+            "test_project\\utils.py::Calculator.add::part_0",
+            "test_project\\utils.py::Calculator::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\tests\\test_calculator.md::document::0",
+            "test_project\\main.py::main::part_0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\utils.py::Calculator::part_0",
+            "test_project\\utils.py::Calculator.add::part_0"
+          ],
+          "latency_ms": 5443.18,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 0.25,
+          "ndcg_at_k": 0.5012658353418871
+        },
+        {
+          "case_id": "usage-doc-start",
+          "query": "README 或使用文档里有没有说明项目用途？",
+          "expected_chunk_ids": [
+            "test_project\\README.md::document::0",
+            "test_project\\docs\\usage.md::document::0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\config.py::__module__::part_0",
+            "test_project\\search.py::__module__::part_0",
+            "test_project\\logger.py::__module__::part_0",
+            "test_project\\api.py::__module__::part_0"
+          ],
+          "latency_ms": 5579.41,
+          "hit_at_k": 1.0,
+          "recall_at_k": 0.5,
+          "mrr": 1.0,
+          "ndcg_at_k": 0.6131471927654584
+        }
+      ]
+    },
+    {
+      "method": "multi_query_rerank",
+      "case_count": 6,
+      "summary": {
+        "hit_at_k": 1.0,
+        "recall_at_k": 0.9166666666666666,
+        "mrr": 0.7916666666666666,
+        "ndcg_at_k": 0.7745468350034986,
+        "average_latency_ms": 10162.135,
+        "p95_latency_ms": 10275.42
+      },
+      "cases": [
+        {
+          "case_id": "code-keyword-score",
+          "query": "keyword_score 函数在哪里定义？它的作用是什么？",
+          "expected_chunk_ids": [
+            "test_project\\search.py::keyword_score::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\search.py::keyword_score::part_0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\search.py::search_documents::part_0",
+            "test_project\\search.py::__module__::part_0",
+            "test_project\\tests\\test_calculator.md::document::0"
+          ],
+          "latency_ms": 10275.42,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 1.0
+        },
+        {
+          "case_id": "api-list-chunks",
+          "query": "如何查询 chunks？",
+          "expected_chunk_ids": [
+            "test_project\\api.py::list_chunks_api::part_0",
+            "test_project\\database.py::list_chunks::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\tests\\test_calculator.md::document::0",
+            "test_project\\database.py::list_chunks::part_0",
+            "test_project\\api.py::list_chunks_api::part_0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\api.py::__module__::part_0"
+          ],
+          "latency_ms": 10083.55,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 0.5,
+          "ndcg_at_k": 0.6934264036172708
+        },
+        {
+          "case_id": "startup-flow",
+          "query": "项目启动时会初始化哪些内容？",
+          "expected_chunk_ids": [
+            "test_project\\api.py::startup::part_0",
+            "test_project\\database.py::init_database::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\api.py::startup::part_0",
+            "test_project\\config.py::get_runtime_config::part_0",
+            "test_project\\database.py::init_database::part_0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\logger.py::__module__::part_0"
+          ],
+          "latency_ms": 10189.09,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 0.9197207891481876
+        },
+        {
+          "case_id": "runtime-config",
+          "query": "运行时配置在哪里定义？",
+          "expected_chunk_ids": [
+            "test_project\\config.py::get_runtime_config::part_0",
+            "test_project\\config.py::__module__::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\config.py::get_runtime_config::part_0",
+            "test_project\\api.py::startup::part_0",
+            "test_project\\config.py::__module__::part_0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\logger.py::setup_logger::part_0"
+          ],
+          "latency_ms": 10114.33,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 1.0,
+          "ndcg_at_k": 0.9197207891481876
+        },
+        {
+          "case_id": "calculator-add",
+          "query": "Calculator.add 方法做什么？",
+          "expected_chunk_ids": [
+            "test_project\\utils.py::Calculator.add::part_0",
+            "test_project\\utils.py::Calculator::part_0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\tests\\test_calculator.md::document::0",
+            "test_project\\main.py::main::part_0",
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\utils.py::Calculator::part_0",
+            "test_project\\utils.py::Calculator.add::part_0"
+          ],
+          "latency_ms": 10179.17,
+          "hit_at_k": 1.0,
+          "recall_at_k": 1.0,
+          "mrr": 0.25,
+          "ndcg_at_k": 0.5012658353418871
+        },
+        {
+          "case_id": "usage-doc-start",
+          "query": "README 或使用文档里有没有说明项目用途？",
+          "expected_chunk_ids": [
+            "test_project\\README.md::document::0",
+            "test_project\\docs\\usage.md::document::0"
+          ],
+          "retrieved_chunk_ids": [
+            "test_project\\docs\\usage.md::document::0",
+            "test_project\\config.py::__module__::part_0",
+            "test_project\\search.py::__module__::part_0",
+            "test_project\\logger.py::__module__::part_0",
+            "test_project\\api.py::__module__::part_0"
+          ],
+          "latency_ms": 10131.25,
+          "hit_at_k": 1.0,
+          "recall_at_k": 0.5,
+          "mrr": 1.0,
+          "ndcg_at_k": 0.6131471927654584
+        }
+      ]
+    }
+  ]
+}

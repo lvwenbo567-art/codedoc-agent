@@ -14,9 +14,13 @@ client = TestClient(app)
 def test_scan_project_api_success(tmp_path):
     readme = tmp_path / "README.md"
     main_py = tmp_path / "main.py"
+    config_json = tmp_path / "config.json"
+    settings_yaml = tmp_path / "settings.yaml"
 
     readme.write_text("# Test Project\nThis is a test project.", encoding="utf-8")
     main_py.write_text("def main():\n    pass", encoding="utf-8")
+    config_json.write_text('{"name": "codedoc"}', encoding="utf-8")
+    settings_yaml.write_text("model: bge-m3\n", encoding="utf-8")
 
     response = client.post(
         "/scan",
@@ -34,15 +38,15 @@ def test_scan_project_api_success(tmp_path):
     data = response.json()
 
     assert data["success"] is True
-    assert data["data"]["file_count"] == 2
-    assert data["data"]["chunk_count"] == 2
+    assert data["data"]["file_count"] == 4
+    assert data["data"]["chunk_count"] == 4
 
-    assert data["data"]["chunk_stats"]["total"] == 2
+    assert data["data"]["chunk_stats"]["total"] == 4
     assert data["data"]["chunk_stats"]["code_count"] == 1
-    assert data["data"]["chunk_stats"]["document_count"] == 1
+    assert data["data"]["chunk_stats"]["document_count"] == 3
 
-    assert len(data["data"]["files"]) == 2
-    assert len(data["data"]["chunk_previews"]) == 2
+    assert len(data["data"]["files"]) == 4
+    assert len(data["data"]["chunk_previews"]) == 3
 
 
 def test_scan_project_api_path_not_exists():

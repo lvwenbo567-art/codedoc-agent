@@ -5,12 +5,26 @@ import pytest
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "app"))
 
-from services.keyword_retriever import extract_query_terms, score_chunk, search_chunks
+from services.keyword_retriever import (
+    extract_query_terms,
+    score_chunk,
+    score_chunks_with_bm25,
+    search_chunks,
+    tokenize_text,
+)
 
 def test_extract_query_terms_basic():
     terms = extract_query_terms("file loader")
 
     assert terms == ["file", "loader"]
+
+
+def test_tokenize_text_splits_code_identifiers():
+    tokens = tokenize_text("file_loader.py loadProject")
+
+    assert "file" in tokens
+    assert "loader" in tokens
+    assert "py" in tokens
 
 
 def test_extract_query_terms_empty():
@@ -93,6 +107,39 @@ def test_search_chunks_top_k():
     assert len(results) == 2
     assert results[0]["score"] >= results[1]["score"]
     assert "score" in results[0]
+    assert results[0]["keyword_score_type"] == "bm25"
+
+
+def test_bm25_prefers_more_specific_chunk():
+    chunks = [
+        {
+            "chunk_id": "generic",
+            "source_path": "generic.md",
+            "source_name": "generic.md",
+            "source_suffix": ".md",
+            "chunk_type": "document",
+            "chunk_index": 0,
+            "content": "search search search",
+            "length": 20,
+        },
+        {
+            "chunk_id": "specific",
+            "source_path": "api.py",
+            "source_name": "api.py",
+            "source_suffix": ".py",
+            "chunk_type": "code",
+            "chunk_index": 0,
+            "content": "search chunks endpoint",
+            "length": 22,
+        },
+    ]
+
+    results = score_chunks_with_bm25(
+        query="search chunks",
+        chunks=chunks,
+    )
+
+    assert results[0]["chunk_id"] == "specific"
 
 def test_search_chunks_no_match():
     chunks = [

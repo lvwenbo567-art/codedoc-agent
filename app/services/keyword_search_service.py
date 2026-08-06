@@ -26,6 +26,7 @@ def build_search_results(
             "content": chunk["content"],
             "content_preview": chunk["content"][:150],
             "length": chunk["length"],
+            "keyword_score_type": chunk.get("keyword_score_type"),
         }
 
         results.append(result)
