@@ -1,0 +1,15 @@
+{
+  "project_name": "frontend_demo_project",
+  "purpose": "Test CodeDoc Research Agent upload, scan, indexing and question answering.",
+  "modules": [
+    "parser",
+    "search",
+    "pipeline",
+    "api"
+  ],
+  "recommended_questions": [
+    "keyword_score 函数在哪里定义？",
+    "这个项目是怎么把文档变成可搜索数据的？",
+    "README 里有没有说明怎么运行测试？"
+  ]
+}

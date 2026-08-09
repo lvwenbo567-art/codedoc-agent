@@ -138,6 +138,9 @@ def _build_query_items(
     rewrite_queries = rewrite_result.get("rewritten_queries", [])
 
     if query_strategy == "rewrite":
+        if rewrite_result.get("fallback_used"):
+            return [{"query": query, "query_type": "original"}], rewrite_result
+
         first_query = rewrite_queries[0] if rewrite_queries else query
         return [{"query": first_query, "query_type": "rewrite"}], rewrite_result
 

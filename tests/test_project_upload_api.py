@@ -46,8 +46,10 @@ def test_upload_project_zip_extracts_safe_archive(
     assert body["success"] is True
     assert data["project_name"] == "demo_project"
     assert data["extracted_file_count"] == 2
-    assert (project_path / "demo" / "README.md").exists()
-    assert (project_path / "demo" / "main.py").exists()
+    assert project_path.name == "demo"
+    assert (project_path / "README.md").exists()
+    assert (project_path / "main.py").exists()
+    assert Path(data["extract_root"]).name == "project"
 
 
 def test_upload_project_zip_rejects_path_traversal(

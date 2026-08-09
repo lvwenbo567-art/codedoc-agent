@@ -1,9 +1,10 @@
-﻿import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import {
   buildVectorIndex,
   fetchVersion,
   listBadCases,
   listFeedback,
+  promoteFeedbackToBadCase,
   resumeHitlAgent,
   scanProject,
   startHitlAgent,
@@ -88,7 +89,7 @@ const defaultConfig: ProjectConfig = {
   project_id: 1,
   project_name: "test_project",
   thread_id: "frontend-demo",
-  project_root: ".",
+  project_root: "test_project",
   chunks_path: defaultSetup.chunksOutputPath,
   index_path: defaultSetup.indexOutputPath,
   embedding_provider: "ollama",
@@ -103,10 +104,10 @@ const defaultConfig: ProjectConfig = {
 };
 
 const exampleQuestions = [
-  "keyword_score 函数在哪里定义？请读取它附近源码并解释作用。",
-  "这个项目有哪些主要目录和模块？请先查看项目结构再回答。",
-  "请运行 tests/test_project_test_tools.py，验证 run_project_tests 工具是否正常。",
-  "README 或使用文档里有没有说明这个项目怎么启动？如果有，请结合入口代码回答。",
+  "keyword_score 在哪里定义？",
+  "项目有哪些主要模块？",
+  "README 里怎么启动项目？",
+  "运行 tests/test_search.py",
 ];
 
 function nowText(): string {
@@ -255,7 +256,7 @@ function buildProjectRecordFromState({
     id: setup.projectPath || setup.projectName,
     projectName: setup.projectName,
     projectPath: setup.projectPath,
-    projectId: scanData?.project_id ?? config.project_id ?? 1,
+    projectId: scanData?.project_id ?? (status === "uploaded" ? 0 : config.project_id ?? 1),
     chunksPath: scanData?.saved_path || setup.chunksOutputPath,
     indexPath: indexData?.output_path || setup.indexOutputPath,
     uploadedFilename,
@@ -327,6 +328,54 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function readString(value: unknown): string {
   return typeof value === "string" ? value : "";
+}
+
+function readNestedAnswer(value: unknown): string {
+  const mapping = asRecord(value);
+  const directAnswer = readString(mapping.answer);
+
+  if (directAnswer) {
+    return directAnswer;
+  }
+
+  const outputAnswer = readString(asRecord(mapping.output).answer);
+
+  if (outputAnswer) {
+    return outputAnswer;
+  }
+
+  for (const nestedValue of Object.values(mapping)) {
+    const nestedAnswer = readString(asRecord(nestedValue).answer);
+
+    if (nestedAnswer) {
+      return nestedAnswer;
+    }
+  }
+
+  return "";
+}
+
+function summarizeNodeUpdate(data: unknown): string {
+  const mapping = asRecord(data);
+  const nodeNames = Object.keys(mapping).filter((key) => key !== "__interrupt__");
+
+  if (!nodeNames.length) {
+    return "收到工作流状态更新";
+  }
+
+  return `节点更新：${nodeNames.join("、")}`;
+}
+
+function appendStreamingLine(content: string, line: string): string {
+  const base = content.startsWith("### 实时执行进度")
+    ? content
+    : "### 实时执行进度\n\n- 已连接 SSE，等待 Agent 输出...";
+
+  if (base.includes(line)) {
+    return base;
+  }
+
+  return `${base}\n- ${line}`;
 }
 
 function renderInlineMarkdown(text: string): ReactNode[] {
@@ -575,10 +624,10 @@ function Metric({ label, value }: { label: string; value: ReactNode }) {
 
 function NavTabs({ view, onChange }: { view: AppView; onChange: (view: AppView) => void }) {
   const items: Array<{ key: AppView; label: string }> = [
-    { key: "setup", label: "项目接入" },
-    { key: "workspace", label: "智能问答" },
-    { key: "evaluation", label: "评测反馈" },
-    { key: "settings", label: "运行设置" },
+    { key: "setup", label: "项目" },
+    { key: "workspace", label: "问答" },
+    { key: "evaluation", label: "评测" },
+    { key: "settings", label: "设置" },
   ];
 
   return (
@@ -650,25 +699,39 @@ function ProjectSetupPage({
   return (
     <section className="setup-grid">
       <div className="card setup-hero">
-        <p className="eyebrow dark">Project onboarding</p>
-        <h2>把代码仓库接入成可检索、可问答、可评测的 Agent 工作区</h2>
+        <p className="eyebrow dark">Project</p>
+        <h2>接入代码仓库</h2>
         <p className="muted">
-          推荐流程：选择项目 → 扫描并切分 chunks → 构建向量索引 → 进入智能问答。
-          你也可以直接使用内置 test_project 快速体验。
+          上传 ZIP 或选择本地路径，构建索引后即可开始问答。
         </p>
+        <div className="capability-strip">
+          <span>AST</span>
+          <span>BM25 / Vector</span>
+          <span>Rerank</span>
+          <span>Agent Tools</span>
+        </div>
+        <div className="hero-stat-grid">
+          <Metric label="已扫描文件" value={scanData?.file_count ?? "-"} />
+          <Metric label="知识 chunks" value={scanData?.chunk_count ?? "-"} />
+          <Metric label="向量数量" value={indexData?.vector_count ?? "-"} />
+          <Metric
+            label="Embedding"
+            value={config.embedding_model || "bge-m3"}
+          />
+        </div>
         <p className="setup-message">{systemMessage}</p>
         <div className="hero-actions">
           <button disabled={running} onClick={onUseDemo}>
-            使用 test_project
+            使用示例项目
           </button>
           <button className="secondary-button" disabled={running} onClick={onEnterWorkspace}>
-            进入工作区
+            进入问答
           </button>
         </div>
       </div>
 
       <div className="card upload-card">
-        <h3>1. 选择项目</h3>
+        <h3>选择项目</h3>
         <label className="drop-zone">
           <input
             accept=".zip"
@@ -680,8 +743,8 @@ function ProjectSetupPage({
               }
             }}
           />
-          <strong>上传 ZIP 项目包</strong>
-          <span>后端会解压到 data/uploaded_projects，并返回 project_path</span>
+          <strong>上传 ZIP</strong>
+          <span>支持包含 README、src、tests 的 Python 项目</span>
         </label>
 
         <div className="form-grid compact">
@@ -719,15 +782,15 @@ function ProjectSetupPage({
       <div className="card project-history-card">
         <div className="section-title-row">
           <div>
-            <p className="eyebrow dark">Recent workspaces</p>
-            <h3>最近项目工作台</h3>
+            <p className="eyebrow dark">Recent</p>
+            <h3>项目历史</h3>
           </div>
           <small>{projectRecords.length} 个记录</small>
         </div>
 
         {projectRecords.length === 0 ? (
           <p className="muted">
-            上传 ZIP、扫描 chunks 或构建索引后，这里会自动保存项目记录。
+            上传或扫描后会自动保存。
           </p>
         ) : (
           <div className="project-record-list">
@@ -747,21 +810,21 @@ function ProjectSetupPage({
                     disabled={running}
                     onClick={() => onSelectProjectRecord(record)}
                   >
-                    选择项目
+                    选择
                   </button>
                   <button
                     className="secondary-button"
                     disabled={running}
                     onClick={() => onOpenProjectRecord(record)}
                   >
-                    打开工作台
+                    打开
                   </button>
                   <button
                     className="ghost-button"
                     disabled={running}
                     onClick={() => onDeleteProjectRecord(record.id)}
                   >
-                    删除记录
+                    删除
                   </button>
                 </div>
               </article>
@@ -771,13 +834,18 @@ function ProjectSetupPage({
       </div>
 
       <div className="card">
-        <h3>2. 构建检索数据</h3>
+        <h3>构建索引</h3>
         <div className="step-action-row">
           <button disabled={running} onClick={onScan}>
-            扫描并生成 chunks
+            扫描
           </button>
-          <button className="secondary-button" disabled={running} onClick={onBuildIndex}>
-            构建向量索引
+          <button
+            className="secondary-button"
+            disabled={running || !scanData}
+            title={!scanData ? "请先扫描项目生成 chunks" : undefined}
+            onClick={onBuildIndex}
+          >
+            构建索引
           </button>
         </div>
 
@@ -788,7 +856,7 @@ function ProjectSetupPage({
             detail={
               scanData
                 ? `${scanData.file_count} 个文件，${scanData.chunk_count} 个 chunks`
-                : "等待扫描项目"
+                : "未扫描"
             }
           />
           <StatusStep
@@ -797,7 +865,7 @@ function ProjectSetupPage({
             detail={
               indexData
                 ? `${indexData.vector_count} 条向量，维度 ${indexData.dimension}`
-                : "等待构建索引"
+                : "未构建"
             }
           />
           <StatusStep
@@ -808,7 +876,7 @@ function ProjectSetupPage({
         </div>
 
         <details>
-          <summary>扫描/索引原始结果</summary>
+          <summary>原始结果</summary>
           <pre>{formatJson({ scanResult, indexResult })}</pre>
         </details>
 
@@ -859,9 +927,30 @@ function StatusStep({ done, title, detail }: { done: boolean; title: string; det
   );
 }
 
+function ProjectReadinessBadge({
+  scanResult,
+  indexResult,
+}: {
+  scanResult: ScanProjectResponse | null;
+  indexResult: BuildIndexResponse | null;
+}) {
+  if (indexResult?.data) {
+    return <span className="badge badge-ok">已索引，可完整问答</span>;
+  }
+
+  if (scanResult?.data) {
+    return <span className="badge badge-warn">已扫描，待构建索引</span>;
+  }
+
+  return <span className="badge badge-muted">未扫描，仅可查看目录类问题</span>;
+}
+
 function WorkspacePage({
   setup,
   config,
+  scanResult,
+  indexResult,
+  projectRecords,
   sessions,
   activeSession,
   query,
@@ -874,11 +963,17 @@ function WorkspacePage({
   onSwitchSession,
   onDeleteSession,
   onClearCurrentSession,
+  onOpenSetup,
   onOpenSettings,
   onClearEvents,
+  onOpenProjectRecord,
+  onSelectFeedbackResponse,
 }: {
   setup: ProjectSetupState;
   config: ProjectConfig;
+  scanResult: ScanProjectResponse | null;
+  indexResult: BuildIndexResponse | null;
+  projectRecords: ProjectWorkspaceRecord[];
   sessions: ChatSession[];
   activeSession: ChatSession;
   query: string;
@@ -891,9 +986,18 @@ function WorkspacePage({
   onSwitchSession: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => void;
   onClearCurrentSession: () => void;
+  onOpenSetup: () => void;
   onOpenSettings: () => void;
   onClearEvents: () => void;
+  onOpenProjectRecord: (record: ProjectWorkspaceRecord) => void;
+  onSelectFeedbackResponse: (response: HITLAgentResponse) => void;
 }) {
+  const canUseFullRag = Boolean(indexResult?.data);
+  const currentProjectPath = setup.projectPath || config.project_root;
+  const otherProjectRecords = projectRecords.filter(
+    (record) => record.projectPath !== currentProjectPath,
+  );
+
   return (
     <section className="product-workspace">
       <aside className="session-sidebar card">
@@ -908,11 +1012,17 @@ function WorkspacePage({
         </div>
 
         <div className="project-summary">
-          <span>项目路径</span>
+          <span>状态</span>
+          <strong>
+            <ProjectReadinessBadge indexResult={indexResult} scanResult={scanResult} />
+          </strong>
+          <span>路径</span>
           <strong>{setup.projectPath || config.project_root}</strong>
-          <span>向量索引</span>
+          <span>chunks</span>
+          <strong>{config.chunks_path}</strong>
+          <span>索引</span>
           <strong>{config.index_path}</strong>
-          <span>审核工具</span>
+          <span>审核</span>
           <strong>{config.approval_required_tools.join(", ") || "无"}</strong>
         </div>
 
@@ -933,31 +1043,83 @@ function WorkspacePage({
 
         <div className="sidebar-actions">
           <button className="secondary-button wide" onClick={onClearCurrentSession}>
-            清空当前会话
+            清空会话
+          </button>
+          <button className="secondary-button wide" onClick={onOpenSetup}>
+            项目设置
           </button>
           <button className="ghost-button wide" onClick={onOpenSettings}>
-            模型与工具设置
+            运行设置
           </button>
           <button
             className="ghost-button wide"
             disabled={sessions.length <= 1}
             onClick={() => onDeleteSession(activeSession.id)}
           >
-            删除当前会话
+            删除会话
           </button>
+        </div>
+
+        <div className="sidebar-section">
+          <div className="sidebar-title compact-title">
+            <div>
+              <p className="eyebrow dark">Projects</p>
+              <h3>项目历史</h3>
+            </div>
+            <small>{projectRecords.length}</small>
+          </div>
+          {otherProjectRecords.length ? (
+            <div className="compact-project-list">
+              {otherProjectRecords.slice(0, 5).map((record) => (
+                <button
+                  className="compact-project-item"
+                  key={record.id}
+                  onClick={() => onOpenProjectRecord(record)}
+                >
+                  <span>{record.projectName}</span>
+                  <small>
+                    {record.status} · chunks={record.chunkCount ?? "-"} · vectors=
+                    {record.vectorCount ?? "-"}
+                  </small>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="muted small-muted">
+              暂无其它项目。
+            </p>
+          )}
         </div>
       </aside>
 
       <main className="chat-product card">
         <div className="chat-header">
           <div>
-            <h2>代码仓库智能问答</h2>
+            <p className="eyebrow dark">Chat</p>
+            <h2>问代码，查证据</h2>
             <p className="muted">
-              当前会话：{activeSession.threadId}。同一个 thread_id 会复用后端 Checkpoint
-              记忆。
+              {activeSession.threadId}
             </p>
+            {!canUseFullRag ? (
+              <p className="workspace-warning">
+                当前项目未完成索引，代码/文档检索能力受限。
+              </p>
+            ) : null}
           </div>
           <ResponseStatus response={activeSession.latestResponse} running={loading || streaming} />
+        </div>
+
+        <div className="workflow-strip">
+          <span className="workflow-dot done">项目</span>
+          <span className={scanResult?.data ? "workflow-dot done" : "workflow-dot"}>
+            chunks
+          </span>
+          <span className={indexResult?.data ? "workflow-dot done" : "workflow-dot"}>
+            index
+          </span>
+          <span className="workflow-dot done">tools</span>
+          <span className="workflow-dot done">memory</span>
+          <span className="workflow-dot done">HITL</span>
         </div>
 
         <div className="quick-prompts">
@@ -970,7 +1132,11 @@ function WorkspacePage({
 
         <div className="message-list">
           {activeSession.messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
+            <MessageBubble
+              key={message.id}
+              message={message}
+              onSelectFeedbackResponse={onSelectFeedbackResponse}
+            />
           ))}
         </div>
 
@@ -984,11 +1150,11 @@ function WorkspacePage({
           <textarea
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="问一个和当前代码仓库有关的问题，例如：keyword_score 函数在哪里定义？"
+            placeholder="问一个和当前仓库有关的问题..."
           />
           <div className="composer-actions">
             <button disabled={loading || streaming || !query.trim()} type="submit">
-              {loading ? "Agent 运行中..." : "发送"}
+              {loading ? "运行中..." : "发送"}
             </button>
             <button
               className="secondary-button"
@@ -996,7 +1162,7 @@ function WorkspacePage({
               type="button"
               onClick={onStream}
             >
-              SSE 流式执行
+              流式
             </button>
           </div>
         </form>
@@ -1039,7 +1205,13 @@ function ResponseStatus({
   return <span className="badge badge-error">失败</span>;
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({
+  message,
+  onSelectFeedbackResponse,
+}: {
+  message: ChatMessage;
+  onSelectFeedbackResponse: (response: HITLAgentResponse) => void;
+}) {
   return (
     <article className={`message-bubble ${message.role}`}>
       <div className="message-meta">
@@ -1052,6 +1224,15 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         </strong>
         <span>{message.createdAt}</span>
         {message.status ? <em>{message.status}</em> : null}
+        {message.role === "assistant" && message.response ? (
+          <button
+            className="message-feedback-button"
+            onClick={() => onSelectFeedbackResponse(message.response as HITLAgentResponse)}
+            type="button"
+          >
+            反馈此回答
+          </button>
+        ) : null}
       </div>
       <div className="message-content">
         {message.role === "assistant" ? (
@@ -1288,54 +1469,162 @@ function ReviewDialog({
   );
 }
 
+
 function EvaluationPage({
-  latestResponse,
+  feedbackResponse,
   config,
 }: {
-  latestResponse: HITLAgentResponse | null;
+  feedbackResponse: HITLAgentResponse | null;
   config: ProjectConfig;
 }) {
   const [rating, setRating] = useState<-1 | 0 | 1>(1);
+  const [issueTags, setIssueTags] = useState<string[]>([]);
   const [comment, setComment] = useState("");
+  const [correctedAnswer, setCorrectedAnswer] = useState("");
+  const [requiredTerms, setRequiredTerms] = useState("");
+  const [feedbackId, setFeedbackId] = useState<number | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [badCaseMessage, setBadCaseMessage] = useState("");
   const [qualityData, setQualityData] = useState<unknown>(null);
   const [evalSummary, setEvalSummary] = useState<EvalSummary | null>(null);
+  const [retrievalMethods, setRetrievalMethods] = useState<
+    Array<{
+      method: string;
+      summary: Record<string, number>;
+    }>
+  >([]);
+  const latestToolNames = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (feedbackResponse?.tool_call_history || [])
+            .map((item) => item.tool_name)
+            .filter((name): name is string => Boolean(name)),
+        ),
+      ),
+    [feedbackResponse],
+  );
+  const latestCitations = Array.isArray(feedbackResponse?.citations)
+    ? feedbackResponse?.citations || []
+    : [];
+  const suggestedIssueTags = [
+    { value: "retrieval_error", label: "检索不准" },
+    { value: "tool_routing_error", label: "工具选错" },
+    { value: "answer_generation_error", label: "回答生成问题" },
+    { value: "citation_error", label: "引用/证据问题" },
+    { value: "should_refuse", label: "应拒答未拒答" },
+    { value: "latency_issue", label: "响应太慢" },
+  ];
+  const badCaseId = feedbackResponse
+    ? `frontend-${feedbackResponse.project_id}-${feedbackResponse.run_id || Date.now()}`
+        .replace(/[^a-zA-Z0-9_-]/g, "-")
+        .slice(0, 160)
+    : "";
+
+  useEffect(() => {
+    setRating(1);
+    setIssueTags([]);
+    setComment("");
+    setCorrectedAnswer("");
+    setRequiredTerms("");
+    setFeedbackId(null);
+    setFeedbackMessage("");
+    setBadCaseMessage("");
+  }, [feedbackResponse?.run_id]);
+
+  function toggleIssueTag(tag: string) {
+    setIssueTags((current) =>
+      current.includes(tag)
+        ? current.filter((item) => item !== tag)
+        : [...current, tag],
+    );
+  }
 
   async function submitCurrentFeedback() {
-    if (!latestResponse) {
+    if (!feedbackResponse) {
       alert("还没有可反馈的回答。");
       return;
     }
 
     const result = await submitFeedback({
       project_id: config.project_id,
-      thread_id: latestResponse.thread_id,
-      run_id: latestResponse.run_id,
-      query: latestResponse.query,
-      answer: latestResponse.answer || latestResponse.error_message || "无回答",
+      thread_id: feedbackResponse.thread_id,
+      run_id: feedbackResponse.run_id,
+      query: feedbackResponse.query,
+      answer: feedbackResponse.answer || feedbackResponse.error_message || "无回答",
       rating,
-      issue_tags: rating < 0 ? ["frontend_feedback"] : [],
-      comment,
+      issue_tags: rating < 0 && issueTags.length === 0 ? ["frontend_feedback"] : issueTags,
+      comment: comment || null,
+      corrected_answer: correctedAnswer || null,
     });
 
     setQualityData(result);
+    const createdFeedbackId = Number(asRecord(result).feedback_id);
+    setFeedbackId(Number.isFinite(createdFeedbackId) ? createdFeedbackId : null);
+    setFeedbackMessage(
+      rating < 0
+        ? "负反馈已保存。你可以继续一键沉淀为 Bad Case。"
+        : "反馈已保存，后续可以在反馈列表中查看。",
+    );
+  }
+
+  async function promoteCurrentBadCase() {
+    if (!feedbackResponse || feedbackId === null) {
+      alert("请先提交当前回答反馈，再提升为 Bad Case。");
+      return;
+    }
+
+    const expectedTools = latestToolNames.length ? latestToolNames : [];
+    const requiredAnswerTerms = requiredTerms
+      .split(/[,，\n]/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const result = await promoteFeedbackToBadCase(feedbackId, {
+      case_id: badCaseId || `frontend-feedback-${feedbackId}`,
+      name: shortText(feedbackResponse.query, 80),
+      expected_tool_names: expectedTools,
+      forbidden_tool_names: [],
+      required_answer_terms: requiredAnswerTerms,
+      accepted_stop_reasons: ["completed"],
+      notes: comment || "由前端反馈中心沉淀的 Bad Case。",
+    });
+
+    setQualityData(result);
+    setBadCaseMessage("已提升为 Bad Case，可用于后续回归测试。");
   }
 
   async function importEvalReport(file: File) {
     const text = await file.text();
     const data = JSON.parse(text);
     setEvalSummary(data.summary ?? null);
+    setRetrievalMethods(Array.isArray(data.methods) ? data.methods : []);
     setQualityData(data);
   }
 
   return (
     <section className="evaluation-layout">
-      <div className="card">
-        <h2>Agent 评测报告</h2>
+      <div className="card evaluation-hero">
+        <p className="eyebrow dark">Evaluation</p>
+        <h2>评测与反馈</h2>
         <p className="muted">
-          可导入 outputs/day40_agent_eval_report.json，展示工具选择、任务成功率和延迟。
+          导入报告，反馈回答，沉淀 Bad Case。
+        </p>
+        <div className="capability-strip">
+          <span>Recall@5</span>
+          <span>MRR</span>
+          <span>NDCG@5</span>
+          <span>Tool Accuracy</span>
+          <span>Bad Case</span>
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>评测报告</h2>
+        <p className="muted">
+          支持 Retrieval 和 Agent JSON 报告。
         </p>
         <label className="file-button">
-          导入 eval report
+          导入报告
           <input
             accept="application/json,.json"
             type="file"
@@ -1347,6 +1636,14 @@ function EvaluationPage({
             }}
           />
         </label>
+        {!evalSummary && !retrievalMethods.length ? (
+          <div className="empty-state">
+            <strong>暂无报告</strong>
+            <p>
+              选择本地 JSON 评测报告即可查看指标。
+            </p>
+          </div>
+        ) : null}
         <div className="metric-grid large">
           <Metric label="total" value={evalSummary?.total_cases ?? "-"} />
           <Metric label="passed" value={evalSummary?.passed_cases ?? "-"} />
@@ -1363,27 +1660,106 @@ function EvaluationPage({
             value={`${numberText(evalSummary?.p95_latency_ms)} ms`}
           />
         </div>
+
+        {retrievalMethods.length ? (
+          <>
+            <h3>检索策略对比</h3>
+            <div className="retrieval-method-grid">
+              {retrievalMethods.map((method) => (
+                <article className="method-card" key={method.method}>
+                  <strong>{method.method}</strong>
+                  <span>Recall@5 {percent(method.summary.recall_at_k)}</span>
+                  <span>MRR {percent(method.summary.mrr)}</span>
+                  <span>NDCG@5 {percent(method.summary.ndcg_at_k)}</span>
+                  <span>Avg {numberText(method.summary.average_latency_ms)} ms</span>
+                </article>
+              ))}
+            </div>
+          </>
+        ) : null}
       </div>
 
       <div className="card">
-        <h2>用户反馈与 Bad Case</h2>
-        <div className="feedback-box">
-          <select
-            value={rating}
-            onChange={(event) => setRating(Number(event.target.value) as -1 | 0 | 1)}
-          >
-            <option value={1}>好评：回答可用</option>
-            <option value={0}>中立：部分可用</option>
-            <option value={-1}>差评：沉淀 Bad Case 候选</option>
-          </select>
-          <textarea
-            value={comment}
-            onChange={(event) => setComment(event.target.value)}
-            placeholder="例如：回答没有使用正确工具 / 缺少证据 / 应该拒答..."
-          />
+        <h2>反馈</h2>
+        {!feedbackResponse ? (
+          <div className="empty-state">
+            <strong>暂无可反馈回答</strong>
+            <p>
+              在问答页点击“反馈此回答”。
+            </p>
+          </div>
+        ) : null}
+        {feedbackResponse ? (
+          <div className="feedback-target-card">
+            <div>
+              <span>评价对象</span>
+              <strong>{shortText(feedbackResponse.query, 90)}</strong>
+            </div>
+            <div>
+              <span>状态</span>
+              <strong>{feedbackResponse.status || feedbackResponse.stop_reason}</strong>
+            </div>
+            <div>
+              <span>工具</span>
+              <strong>{latestToolNames.length ? latestToolNames.join(" / ") : "无"}</strong>
+            </div>
+            <div>
+              <span>证据</span>
+              <strong>{latestCitations.length} 条</strong>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="feedback-box product-feedback-box">
+          <div className="rating-choice-grid">
+            {[
+              { value: 1 as const, title: "可用", desc: "保留正样本" },
+              { value: 0 as const, title: "一般", desc: "需要补充" },
+              { value: -1 as const, title: "有问题", desc: "转为 Bad Case" },
+            ].map((item) => (
+              <button
+                className={rating === item.value ? "rating-card active" : "rating-card"}
+                key={item.value}
+                onClick={() => {
+                  setRating(item.value);
+                  if (item.value >= 0) {
+                    setBadCaseMessage("");
+                  }
+                }}
+                type="button"
+              >
+                <strong>{item.title}</strong>
+                <span>{item.desc}</span>
+              </button>
+            ))}
+          </div>
+
+          <div>
+            <label>问题类型</label>
+            <div className="issue-tag-grid">
+              {suggestedIssueTags.map((tag) => (
+                <button
+                  className={issueTags.includes(tag.value) ? "issue-tag active" : "issue-tag"}
+                  key={tag.value}
+                  onClick={() => toggleIssueTag(tag.value)}
+                  type="button"
+                >
+                  {tag.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="step-action-row">
             <button className="secondary-button" onClick={submitCurrentFeedback}>
-              提交当前回答反馈
+              保存反馈
+            </button>
+            <button
+              className="secondary-button danger-lite"
+              disabled={rating >= 0 || feedbackId === null}
+              onClick={promoteCurrentBadCase}
+            >
+              一键沉淀 Bad Case
             </button>
             <button
               className="ghost-button"
@@ -1398,9 +1774,51 @@ function EvaluationPage({
               读取 Bad Cases
             </button>
           </div>
+
+          {feedbackMessage ? <p className="success-hint">{feedbackMessage}</p> : null}
+          {badCaseMessage ? <p className="success-hint">{badCaseMessage}</p> : null}
+
+          <label>
+            反馈备注
+            <textarea
+              value={comment}
+              onChange={(event) => setComment(event.target.value)}
+              placeholder="例如：回答没有使用正确工具 / 缺少证据 / 应该拒答 / 定位到错误文件..."
+            />
+          </label>
+
+          <label>
+            期望回答或修正要点
+            <textarea
+              value={correctedAnswer}
+              onChange={(event) => setCorrectedAnswer(event.target.value)}
+              placeholder="可选。写下你希望 Agent 正确回答的要点，后续可作为回归测试参考。"
+            />
+          </label>
+
+          {rating < 0 ? (
+            <div className="bad-case-draft">
+              <div>
+                <span>Bad Case ID</span>
+                <strong>{badCaseId || "提交反馈后生成"}</strong>
+              </div>
+              <label>
+                期望答案关键词
+                <input
+                  value={requiredTerms}
+                  onChange={(event) => setRequiredTerms(event.target.value)}
+                  placeholder="例如：keyword_score, search.py, 关键词计数"
+                />
+              </label>
+              <p className="muted">
+                提升为 Bad Case 后，系统会保存 query、原回答、期望工具和关键词，
+                后续可加入 JSONL 评测集做回归测试。
+              </p>
+            </div>
+          ) : null}
         </div>
         <details open>
-          <summary>质量数据 JSON</summary>
+          <summary>原始数据</summary>
           <pre>{qualityData ? formatJson(qualityData) : "暂无数据。"}</pre>
         </details>
       </div>
@@ -1582,7 +2000,7 @@ function buildSyntheticResponse({
 }
 
 export default function App() {
-  const [view, setView] = useState<AppView>("workspace");
+  const [view, setView] = useState<AppView>("setup");
   const [setup, setSetup] = useState<ProjectSetupState>(defaultSetup);
   const [config, setConfig] = useState<ProjectConfig>(defaultConfig);
   const [sessions, setSessions] = useState<ChatSession[]>(loadSessions);
@@ -1603,6 +2021,8 @@ export default function App() {
   const [streaming, setStreaming] = useState(false);
   const [systemMessage, setSystemMessage] = useState("后端未检查");
   const [reviewVisible, setReviewVisible] = useState(true);
+  const [selectedFeedbackResponse, setSelectedFeedbackResponse] =
+    useState<HITLAgentResponse | null>(null);
 
   const activeSession = useMemo(() => {
     return sessions.find((session) => session.id === activeSessionId) ?? sessions[0];
@@ -1631,6 +2051,10 @@ export default function App() {
       localStorage.setItem(ACTIVE_SESSION_KEY, activeSessionId);
     }
   }, [activeSessionId]);
+
+  useEffect(() => {
+    setSelectedFeedbackResponse(null);
+  }, [activeSessionId, activeWorkspaceKey]);
 
   useEffect(() => {
     if (!activeWorkspaceKey || sessions.length === 0) {
@@ -1666,6 +2090,17 @@ export default function App() {
 
     return response.interrupts[0] ?? null;
   }, [activeSession]);
+
+  useEffect(() => {
+    if (currentInterrupt) {
+      setReviewVisible(true);
+      return;
+    }
+
+    if (!loading && !streaming) {
+      setReviewVisible(false);
+    }
+  }, [currentInterrupt, loading, streaming]);
 
   function updateActiveSession(updater: (session: ChatSession) => ChatSession) {
     setSessions((current) =>
@@ -1703,6 +2138,11 @@ export default function App() {
     }));
   }
 
+  function selectFeedbackResponse(response: HITLAgentResponse) {
+    setSelectedFeedbackResponse(response);
+    setView("evaluation");
+  }
+
   function buildEffectiveConfig(): ProjectConfig {
     return {
       ...config,
@@ -1729,16 +2169,18 @@ export default function App() {
     nextScanResult = scanResult,
     nextIndexResult = indexResult,
   ) {
-    const projectId = nextScanResult?.data?.project_id ?? config.project_id;
+    setConfig((current) => {
+      const projectId = nextScanResult?.data?.project_id ?? current.project_id;
 
-    setConfig({
-      ...config,
-      project_id: projectId || 1,
-      project_name: nextSetup.projectName,
-      project_root: nextSetup.projectPath || ".",
-      chunks_path: nextScanResult?.data?.saved_path || nextSetup.chunksOutputPath,
-      index_path: nextIndexResult?.data?.output_path || nextSetup.indexOutputPath,
-      thread_id: activeSession.threadId,
+      return {
+        ...current,
+        project_id: projectId || current.project_id || 1,
+        project_name: nextSetup.projectName,
+        project_root: nextSetup.projectPath || ".",
+        chunks_path: nextScanResult?.data?.saved_path || nextSetup.chunksOutputPath,
+        index_path: nextIndexResult?.data?.output_path || nextSetup.indexOutputPath,
+        thread_id: activeSession.threadId,
+      };
     });
   }
 
@@ -1815,7 +2257,7 @@ export default function App() {
     );
     setConfig((current) => ({
       ...current,
-      project_id: record.projectId || 1,
+      project_id: record.projectId || current.project_id || 1,
       project_name: record.projectName,
       project_root: record.projectPath || ".",
       chunks_path: record.chunksPath,
@@ -1996,6 +2438,16 @@ export default function App() {
   }
 
   async function runBuildIndex() {
+    if (!scanResult?.data?.saved_path && !setup.chunksOutputPath) {
+      setSystemMessage("请先扫描项目生成 chunks，再构建向量索引。");
+      return;
+    }
+
+    if (!scanResult?.data) {
+      setSystemMessage("当前项目还没有扫描结果。请先点击“扫描并生成 chunks”。");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -2051,7 +2503,7 @@ export default function App() {
     });
 
     setLoading(true);
-    setReviewVisible(true);
+    setReviewVisible(false);
     setQuery("");
 
     try {
@@ -2068,12 +2520,14 @@ export default function App() {
         status: result.status === "interrupted" ? "interrupted" : result.success ? "completed" : "failed",
         response: result,
       });
+      setReviewVisible(result.status === "interrupted");
     } catch (error) {
       patchMessage(assistantId, {
         content: `请求失败：${String(error)}`,
         status: "failed",
         response: null,
       });
+      setReviewVisible(false);
     } finally {
       setLoading(false);
     }
@@ -2138,13 +2592,13 @@ export default function App() {
     appendMessage({
       id: assistantId,
       role: "assistant",
-      content: "",
+      content: "### 实时执行进度\n\n- 已连接 SSE，等待 Agent 输出...",
       createdAt: nowText(),
       status: "streaming",
     });
 
     setStreaming(true);
-    setReviewVisible(true);
+    setReviewVisible(false);
     setQuery("");
     updateActiveSession((session) => ({ ...session, events: [] }));
 
@@ -2154,6 +2608,24 @@ export default function App() {
 
         const data = asRecord(item.data);
 
+        if (item.event === "connected") {
+          updateActiveSession((session) => ({
+            ...session,
+            messages: session.messages.map((message) =>
+              message.id === assistantId
+                ? {
+                    ...message,
+                    content: appendStreamingLine(
+                      message.content,
+                      `${item.receivedAt} 已建立流式连接`,
+                    ),
+                    status: "streaming",
+                  }
+                : message,
+            ),
+          }));
+        }
+
         if (item.event === "token") {
           const token = readString(data.text);
 
@@ -2162,7 +2634,12 @@ export default function App() {
               ...session,
               messages: session.messages.map((message) =>
                 message.id === assistantId
-                  ? { ...message, content: `${message.content}${token}` }
+                  ? {
+                      ...message,
+                      content: message.content.startsWith("### 实时执行进度")
+                        ? token
+                        : `${message.content}${token}`,
+                    }
                   : message,
               ),
             }));
@@ -2170,10 +2647,30 @@ export default function App() {
         }
 
         if (item.event === "node_update") {
-          patchMessage(assistantId, {
-            content: readString(data.answer) || "Agent 正在执行工作流，请查看右侧 SSE 事件流...",
-            status: "streaming",
-          });
+          const answer = readNestedAnswer(data);
+
+          if (answer) {
+            patchMessage(assistantId, {
+              content: answer,
+              status: "streaming",
+            });
+          } else {
+            updateActiveSession((session) => ({
+              ...session,
+              messages: session.messages.map((message) =>
+                message.id === assistantId
+                  ? {
+                      ...message,
+                      content: appendStreamingLine(
+                        message.content,
+                        `${item.receivedAt} ${summarizeNodeUpdate(data)}`,
+                      ),
+                      status: "streaming",
+                    }
+                  : message,
+              ),
+            }));
+          }
         }
 
         if (item.event === "interrupt") {
@@ -2196,7 +2693,7 @@ export default function App() {
         }
 
         if (item.event === "completed") {
-          const answer = readString(data.answer) || "Agent 执行完成，但没有返回有效回答。";
+          const answer = readNestedAnswer(data) || "Agent 执行完成，但没有返回有效回答。";
           const response = buildSyntheticResponse({
             query: normalizedQuery,
             config: effectiveConfig,
@@ -2260,7 +2757,10 @@ export default function App() {
       <header className="topbar">
         <div>
           <p className="eyebrow">CodeDoc Research Agent</p>
-          <h1>代码仓库智能问答工作台</h1>
+          <h1>代码仓库问答工作台</h1>
+          <p className="topbar-subtitle">
+            上传仓库，构建索引，用 Agent 查询代码与文档。
+          </p>
         </div>
         <NavTabs view={view} onChange={setView} />
       </header>
@@ -2291,8 +2791,11 @@ export default function App() {
         <WorkspacePage
           activeSession={activeSession}
           config={config}
+          indexResult={indexResult}
           loading={loading}
+          projectRecords={projectRecords}
           query={query}
+          scanResult={scanResult}
           sessions={sessions}
           setup={setup}
           streaming={streaming}
@@ -2301,15 +2804,21 @@ export default function App() {
           onClearEvents={() => updateActiveSession((session) => ({ ...session, events: [] }))}
           onDeleteSession={deleteSession}
           onNewThread={createNewThread}
+          onOpenSetup={() => setView("setup")}
           onOpenSettings={() => setView("settings")}
+          onOpenProjectRecord={openProjectRecord}
           onQueryChange={setQuery}
+          onSelectFeedbackResponse={selectFeedbackResponse}
           onStream={runStream}
           onSwitchSession={setActiveSessionId}
         />
       ) : null}
 
       {view === "evaluation" ? (
-        <EvaluationPage config={config} latestResponse={activeSession.latestResponse} />
+        <EvaluationPage
+          config={config}
+          feedbackResponse={selectedFeedbackResponse || activeSession.latestResponse}
+        />
       ) : null}
 
       {view === "settings" ? (

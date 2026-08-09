@@ -58,6 +58,23 @@ def _tail_text(value: str, max_chars: int = OUTPUT_TAIL_CHARS) -> str:
     return value[-max_chars:]
 
 
+def _normalize_keyword(keyword: str | None) -> str | None:
+    normalized = str(keyword or "").strip()
+
+    if not normalized:
+        return None
+
+    if normalized.lower() in {
+        "none",
+        "null",
+        "undefined",
+        "nil",
+    }:
+        return None
+
+    return normalized
+
+
 def _build_pytest_command(
     *,
     test_path: Path,
@@ -73,7 +90,7 @@ def _build_pytest_command(
         str(basetemp_path),
     ]
 
-    normalized_keyword = (keyword or "").strip()
+    normalized_keyword = _normalize_keyword(keyword)
 
     if normalized_keyword:
         command.extend(
@@ -155,7 +172,7 @@ def _run_project_tests(
             "project_root": str(root),
             "test_path": _normalize_path(test_path),
             "basetemp_path": str(basetemp_path),
-            "keyword": (keyword or "").strip() or None,
+            "keyword": _normalize_keyword(keyword),
             "max_seconds": max_seconds,
             "duration_ms": duration_ms,
             "stdout_tail": _tail_text(str(stdout)),
@@ -175,7 +192,7 @@ def _run_project_tests(
         "project_root": str(root),
         "test_path": _normalize_path(test_path),
         "basetemp_path": str(basetemp_path),
-        "keyword": (keyword or "").strip() or None,
+        "keyword": _normalize_keyword(keyword),
         "max_seconds": max_seconds,
         "duration_ms": duration_ms,
         "stdout_tail": _tail_text(completed.stdout or ""),

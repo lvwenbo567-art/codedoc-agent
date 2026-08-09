@@ -16,7 +16,7 @@
 data/evaluation/retrieval_experiment_cases.jsonl
 ```
 
-当前包含 25 条 case，覆盖：
+当前包含 50 条 case，覆盖：
 
 - 函数定位；
 - 类和方法理解；
@@ -42,7 +42,7 @@ python scripts\run_retrieval_experiments.py `
   --dataset data/evaluation/retrieval_experiment_cases.jsonl `
   --chunks-path outputs/test_project_chunks.json `
   --index-path outputs/test_project_vector_index_bge_m3.json `
-  --output outputs/experiments/retrieval_experiment_report_bge_m3_25.json `
+  --output outputs/experiments/retrieval_experiment_report_bge_m3_50.json `
   --embedding-provider ollama `
   --embedding-model bge-m3 `
   --embedding-base-url http://localhost:11434 `
@@ -56,15 +56,15 @@ python scripts\run_retrieval_experiments.py `
 
 | 方法 | Hit@K | Recall@K | MRR | NDCG@K | 平均延迟(ms) | P95延迟(ms) |
 |---|---:|---:|---:|---:|---:|---:|
-| BM25 | 0.88 | 0.6933 | 0.7267 | 0.6395 | 1.40 | 1.52 |
-| Vector | 1.00 | 0.8400 | 0.9500 | 0.8286 | 2565.90 | 2732.92 |
-| Hybrid | 1.00 | 0.8533 | 0.9200 | 0.8225 | 2672.40 | 2725.58 |
-| Hybrid + Rerank | 0.96 | 0.8067 | 0.8300 | 0.7383 | 6324.81 | 6202.12 |
-| Multi-Query + Rerank | 0.96 | 0.8167 | 0.8300 | 0.7450 | 11270.22 | 11905.38 |
+| BM25 | 0.96 | 0.7983 | 0.8083 | 0.7334 | 1.39 | 2.08 |
+| Vector | 1.00 | 0.8283 | 0.8633 | 0.7774 | 2702.15 | 2662.38 |
+| Hybrid | 1.00 | 0.8517 | 0.8767 | 0.8058 | 2557.31 | 2623.99 |
+| Hybrid + Rerank | 0.98 | 0.8300 | 0.7867 | 0.7358 | 7227.06 | 6970.64 |
+| Multi-Query + Rerank | 0.98 | 0.8333 | 0.7867 | 0.7366 | 11701.16 | 11999.67 |
 
 当前结论：
 
-- 在 `test_project` 这种小型代码仓库上，`Vector` 和 `Hybrid` 表现最好；
+- 在 `test_project` 这种小型代码仓库上，`Hybrid` 的整体召回和排序质量最好；
 - `BM25` 延迟极低，但语义召回不如真实向量；
 - `Rerank` 在当前小评测集上没有带来提升，反而增加延迟；
 - 这个结论说明项目已经具备“用数据分析检索策略”的能力，而不是只凭感觉调参。
@@ -174,7 +174,7 @@ p95_latency_ms = 85958.13
 当前最稳的写法：
 
 ```text
-构建覆盖代码定位、文档问答、配置查询和工具调用的 JSONL 评测集，对 BM25、向量检索、Hybrid Search、Rerank、Multi-Query 和 Agent 工具调用链路进行消融评估，统计 Recall@K、MRR、NDCG@K、工具选择准确率、任务成功率和 P95 延迟，并基于失败样本分析检索策略与 Agent 工具路由的优化方向。
+构建覆盖代码定位、文档问答、配置查询和工具调用的 JSONL 评测集，对 BM25、向量检索、Hybrid Search、Rerank、Multi-Query 和 Agent 工具调用链路进行对比评测，统计 Recall@K、MRR、NDCG@K、工具选择准确率、任务成功率和 P95 延迟，并基于失败样本分析检索策略与 Agent 工具路由的优化方向。
 ```
 
 不建议写：

@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import uuid
 from typing import Any, Literal
 
@@ -18,29 +17,8 @@ from langgraph_agent.tool_agent_nodes import (
 )
 from langgraph_agent.tool_agent_state import CodeDocToolAgentState
 from langgraph_agent.tool_call_guard import evaluate_tool_calls
+from langgraph_agent.tool_call_normalizer import normalize_tool_calls
 from security.tool_security_policy import ToolSecurityPolicy
-
-
-def _normalize_tool_calls(tool_calls: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """
-    将 LangChain AIMessage.tool_calls 统一成可 JSON 化的结构。
-    """
-    result: list[dict[str, Any]] = []
-
-    for call in tool_calls:
-        result.append(
-            {
-                "id": str(call.get("id") or ""),
-                "name": str(call.get("name") or ""),
-                "args": (
-                    call.get("args")
-                    if isinstance(call.get("args"), dict)
-                    else {}
-                ),
-            }
-        )
-
-    return result
 
 
 def _tool_call_ids(tool_calls: list[dict[str, Any]]) -> set[str]:
@@ -119,7 +97,7 @@ class HumanReviewToolAgentNodes(CodeDocToolAgentNodes):
                 },
             )
 
-        tool_calls = _normalize_tool_calls(list(last_ai_message.tool_calls or []))
+        tool_calls = normalize_tool_calls(list(last_ai_message.tool_calls or []))
 
         if not tool_calls:
             answer_text = str(getattr(last_ai_message, "content", "") or "").strip()
@@ -181,6 +159,11 @@ class HumanReviewToolAgentNodes(CodeDocToolAgentNodes):
         return Command(
             goto="prepare_tools",
             update={
+                "messages": [
+                    last_ai_message.model_copy(
+                        update={"tool_calls": tool_calls}
+                    )
+                ],
                 "pending_tool_calls": tool_calls,
                 "approval_request_id": None,
                 "approval_status": "not_required",
@@ -420,9 +403,27 @@ class HumanReviewToolAgentNodes(CodeDocToolAgentNodes):
                 },
             )
 
+        messages = list(state.get("messages") or [])
+        last_ai_message = _last_ai_message(messages)
+
+        if last_ai_message is None:
+            return Command(
+                goto="limit_answer",
+                update={
+                    "stop_reason": "invalid_tool_call",
+                    "error_message": "准备执行工具时未找到原始 AIMessage。",
+                    "execution_steps": ["prepare_tools_blocked"],
+                },
+            )
+
         return Command(
             goto="tools",
             update={
+                "messages": [
+                    last_ai_message.model_copy(
+                        update={"tool_calls": pending_tool_calls}
+                    )
+                ],
                 "tool_call_count": (
                     int(state.get("tool_call_count", 0))
                     + len(pending_tool_calls)

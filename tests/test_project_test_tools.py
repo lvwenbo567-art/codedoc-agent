@@ -178,3 +178,50 @@ def test_run_project_tests_returns_timeout_result(
     assert result.data["exit_code"] is None
     assert "partial stdout" in result.data["stdout_tail"]
     assert "partial stderr" in result.data["stderr_tail"]
+
+
+def test_run_project_tests_treats_string_none_keyword_as_empty(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+
+    captured_command = []
+
+    class Completed:
+        returncode = 0
+        stdout = "4 passed"
+        stderr = ""
+
+    def fake_run(
+        command,
+        **kwargs,
+    ):
+        captured_command.extend(command)
+        return Completed()
+
+    monkeypatch.setattr(
+        project_test_tools.subprocess,
+        "run",
+        fake_run,
+    )
+
+    registry = build_code_doc_tool_registry(
+        project_root=str(tmp_path),
+    )
+    executor = ToolExecutor(registry)
+
+    result = executor.execute(
+        tool_name="run_project_tests",
+        arguments={
+            "test_path": "tests",
+            "keyword": "None",
+            "max_seconds": 10,
+        },
+    )
+
+    assert result.success is True
+    assert result.data["passed"] is True
+    assert result.data["keyword"] is None
+    assert "-k" not in captured_command

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from dataclasses import dataclass
 
 from langchain_core.messages import BaseMessage, SystemMessage
@@ -8,6 +9,9 @@ from langchain_core.messages import BaseMessage, SystemMessage
 from memory.conversation_summary_service import ConversationSummaryService
 from memory.memory_models import ConversationSummary
 from memory.memory_repository import MemoryRepository
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -58,11 +62,20 @@ class MemoryAwareContextBuilder:
         plan = self.summary_service.build_update_plan(messages=messages, covered_message_count=previous.covered_message_count if previous else 0)
         if not plan.should_update:
             return False
-        summary = await asyncio.to_thread(
-            self.summary_service.summarize,
-            previous=previous.summary if previous else None,
-            messages=plan.source_messages,
-        )
+        try:
+            summary = await asyncio.to_thread(
+                self.summary_service.summarize,
+                previous=previous.summary if previous else None,
+                messages=plan.source_messages,
+            )
+        except Exception as exc:
+            logger.warning(
+                "会话摘要更新失败，已跳过本轮记忆压缩：%s",
+                exc,
+            )
+            return False
+        if summary is None:
+            return False
         await self.repository.upsert_summary(user_id=user_id, project_id=project_id, thread_id=thread_id,
                                              effective_thread_id=effective_thread_id, summary=summary,
                                              covered_turn_count=plan.covered_turn_count,

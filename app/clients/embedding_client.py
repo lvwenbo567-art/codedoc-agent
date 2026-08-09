@@ -257,15 +257,32 @@ class EmbeddingClient:
             retry_payload = {
                 "model": self.config.model_name,
                 "input": [
-                    self._build_ollama_safe_embedding_text(text)
+                    self._build_ollama_passage_embedding_text(text)
                     for text in texts
                 ],
             }
 
-            data = self._post_json(
-                url=url,
-                payload=retry_payload,
-            )
+            try:
+                data = self._post_json(
+                    url=url,
+                    payload=retry_payload,
+                )
+            except RuntimeError as retry_exc:
+                if not self._is_ollama_nan_response_error(retry_exc):
+                    raise
+
+                safe_retry_payload = {
+                    "model": self.config.model_name,
+                    "input": [
+                        self._build_ollama_safe_embedding_text(text)
+                        for text in texts
+                    ],
+                }
+
+                data = self._post_json(
+                    url=url,
+                    payload=safe_retry_payload,
+                )
 
         embeddings = data.get("embeddings")
 
@@ -288,6 +305,15 @@ class EmbeddingClient:
             or "failed to encode response" in message
         )
 
+    def _build_ollama_passage_embedding_text(
+        self,
+        text: str,
+    ) -> str:
+        if text.startswith("passage: "):
+            return text
+
+        return f"passage: {text}"
+
     def _build_ollama_safe_embedding_text(
         self,
         text: str,
@@ -295,13 +321,29 @@ class EmbeddingClient:
         """
         为 Ollama Embedding 构造更稳定的输入文本。
 
-        bge 系列模型通常接受 passage 前缀；当原始短代码摘要触发
-        Ollama NaN 响应时，追加前缀可以避开模型的边界输入。
+        bge 系列模型通常接受 passage 前缀；当原始短代码摘要、
+        JSON/YAML/TOML 配置片段或 Python repr 风格文本触发 Ollama
+        NaN 响应时，将结构化符号转成空格可以避开模型的边界输入。
         """
-        if text.startswith("passage: "):
-            return text
+        normalized = text.replace("\x00", " ")
+        normalized = re.sub(
+            r"[{}\[\]()`'\"=:,;<>|]",
+            " ",
+            normalized,
+        )
+        normalized = re.sub(
+            r"\s+",
+            " ",
+            normalized,
+        ).strip()
 
-        return f"passage: {text}"
+        if not normalized:
+            normalized = "empty content"
+
+        if normalized.startswith("passage: "):
+            return normalized
+
+        return f"passage: {normalized}"
 
     def _embed_openai_compatible(
         self,

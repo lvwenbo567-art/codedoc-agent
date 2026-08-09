@@ -17,7 +17,9 @@ logs/
 
 # Local test temp files
 .tmp_pytest/
+.tmp_pytest_*/
 .pytest-tmp/
+.pytest_cache/
 
 # Database
 *.db
@@ -26,6 +28,10 @@ logs/
 data/langgraph_checkpoints.sqlite
 data/langgraph_checkpoints.sqlite-shm
 data/langgraph_checkpoints.sqlite-wal
+data/codedoc.db
+data/agent_feedback.db
+data/codedoc_memory.sqlite
+data/ingestion_jobs.sqlite
 data/uploaded_projects/
 
 # IDE
@@ -38,3 +44,15 @@ frontend/dist/
 
 # Qdrant local data
 qdrant_storage/
+
+# Local generated indexes / chunks
+outputs/*
+!outputs/experiments/
+outputs/experiments/*_vector_index*.json
+outputs/experiments/logs/
+!outputs/experiments/*report*.json
+!outputs/README.md
+
+# Local demo archives
+*.zip
+!examples/**/*.zip

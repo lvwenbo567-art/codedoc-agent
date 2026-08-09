@@ -1,0 +1,167 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: codedoc-api
+    ports:
+      - "${CODEDOC_API_PORT:-8000}:8000"
+    environment:
+      CODEDOC_CHAT_PROVIDER: openai_compatible
+      CODEDOC_CHAT_MODEL: ${CODEDOC_CHAT_MODEL:-qwen3.5:4b}
+      CODEDOC_CHAT_BASE_URL: http://host.docker.internal:11434/v1
+      CODEDOC_CHAT_API_KEY: ${CODEDOC_CHAT_API_KEY:-EMPTY}
+      CODEDOC_CHAT_TIMEOUT_SECONDS: ${CODEDOC_CHAT_TIMEOUT_SECONDS:-180}
+      CODEDOC_CHAT_TEMPERATURE: ${CODEDOC_CHAT_TEMPERATURE:-0.1}
+      CODEDOC_CHAT_MAX_TOKENS: ${CODEDOC_CHAT_MAX_TOKENS:-600}
+
+      LANGCHAIN_CHAT_PROVIDER: openai_compatible
+      LANGCHAIN_CHAT_MODEL: ${CODEDOC_CHAT_MODEL:-qwen3.5:4b}
+      LANGCHAIN_CHAT_BASE_URL: http://host.docker.internal:11434/v1
+      LANGCHAIN_CHAT_API_KEY: ${CODEDOC_CHAT_API_KEY:-EMPTY}
+      LANGCHAIN_CHAT_TIMEOUT_SECONDS: ${CODEDOC_CHAT_TIMEOUT_SECONDS:-180}
+      LANGCHAIN_CHAT_MAX_TOKENS: ${CODEDOC_CHAT_MAX_TOKENS:-600}
+      LANGCHAIN_CHAT_MAX_RETRIES: ${LANGCHAIN_CHAT_MAX_RETRIES:-0}
+      LANGCHAIN_CHAT_TEMPERATURE: ${CODEDOC_CHAT_TEMPERATURE:-0.1}
+      LANGCHAIN_STRUCTURED_OUTPUT_METHOD: function_calling
+
+      CODEDOC_EMBEDDING_PROVIDER: ollama
+      CODEDOC_EMBEDDING_MODEL: ${CODEDOC_EMBEDDING_MODEL:-bge-m3}
+      CODEDOC_EMBEDDING_BASE_URL: http://host.docker.internal:11434
+      CODEDOC_EMBEDDING_API_KEY: ""
+      CODEDOC_EMBEDDING_TIMEOUT_SECONDS: ${CODEDOC_EMBEDDING_TIMEOUT_SECONDS:-180}
+      CODEDOC_EMBEDDING_DIMENSION: ${CODEDOC_EMBEDDING_DIMENSION:-1024}
+      CODEDOC_EMBEDDING_BATCH_SIZE: ${CODEDOC_EMBEDDING_BATCH_SIZE:-8}
+
+      CODEDOC_RERANK_PROVIDER: ${CODEDOC_RERANK_PROVIDER:-mock}
+      CODEDOC_RERANK_MODEL: ${CODEDOC_RERANK_MODEL:-mock-reranker}
+
+      VECTOR_STORE_BACKEND: ${VECTOR_STORE_BACKEND:-qdrant}
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-codedoc_chunks_v1}
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
+      QDRANT_PREFER_GRPC: "false"
+      QDRANT_TIMEOUT_SECONDS: ${QDRANT_TIMEOUT_SECONDS:-30}
+
+      LANGGRAPH_CHECKPOINT_DB: /app/data/langgraph_checkpoints.sqlite
+      CODEDOC_INGESTION_JOB_DB_PATH: /app/data/ingestion_jobs.sqlite
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - codedoc_data:/app/data
+      - codedoc_outputs:/app/outputs
+    depends_on:
+      qdrant:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: codedoc-frontend
+    ports:
+      - "${CODEDOC_FRONTEND_PORT:-5173}:5173"
+    environment:
+      VITE_BACKEND_PROXY_TARGET: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:5173').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.6
+    container_name: codedoc-qdrant
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+      - "${QDRANT_GRPC_PORT:-6334}:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:6333/readyz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: codedoc-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: codedoc-ollama
+    profiles:
+      - container-models
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 10
+    restart: unless-stopped
+
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: codedoc-ollama-init
+    profiles:
+      - container-models
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        ollama pull ${CODEDOC_CHAT_MODEL:-qwen3.5:4b}
+        ollama pull ${CODEDOC_EMBEDDING_MODEL:-bge-m3}
+
+volumes:
+  codedoc_data:
+  codedoc_outputs:
+  qdrant_storage:
+  redis_data:
+  ollama_data:

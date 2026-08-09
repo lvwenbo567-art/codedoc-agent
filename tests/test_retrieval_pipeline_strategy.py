@@ -34,6 +34,19 @@ class DuplicateRewriteService:
         }
 
 
+class FallbackRewriteService:
+    def rewrite(self, query: str, rewrite_count: int) -> dict:
+        return {
+            "original_query": query,
+            "rewritten_queries": ["fallback rewritten query"],
+            "rewritten_query": "fallback rewritten query",
+            "rewrite_applied": True,
+            "protected_terms": [],
+            "fallback_used": True,
+            "fallback_reason": "model_empty_response",
+        }
+
+
 class CountingRerankClient:
     def __init__(self):
         self.call_count = 0
@@ -118,6 +131,45 @@ def test_rewrite_strategy_uses_rewritten_query(monkeypatch):
 
     assert called_queries == ["rewrite one"]
     assert result["query_items"][0]["query_type"] == "rewrite"
+
+
+def test_rewrite_strategy_uses_original_query_when_rewrite_fallback(monkeypatch):
+    called_queries = []
+
+    def fake_hybrid_search(query: str, final_top_k: int, **kwargs) -> dict:
+        called_queries.append(query)
+        return {
+            "dimension": 64,
+            "results": [
+                {
+                    "chunk_id": "a",
+                    "content": "A",
+                    "rank": 1,
+                    "final_score": 1.0,
+                }
+            ],
+        }
+
+    monkeypatch.setattr(
+        retrieval_pipeline,
+        "hybrid_search_from_files",
+        fake_hybrid_search,
+    )
+
+    result = retrieval_pipeline.retrieve_with_rerank(
+        query="original query",
+        chunks_path="chunks.json",
+        index_path="index.json",
+        candidate_top_k=5,
+        final_top_k=1,
+        query_strategy="rewrite",
+        query_rewrite_service=FallbackRewriteService(),
+        rerank_client_override=CountingRerankClient(),
+    )
+
+    assert called_queries == ["original query"]
+    assert result["query_items"][0]["query"] == "original query"
+    assert result["query_items"][0]["query_type"] == "original"
 
 
 def test_multi_query_deduplicates_query_items(monkeypatch):

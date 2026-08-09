@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 from dataclasses import dataclass
 
 from runtime.async_call_policy import AsyncCallRetryExhaustedError
@@ -102,10 +103,32 @@ class AsyncEmbeddingClient:
         )
 
     @staticmethod
-    def _build_ollama_safe_embedding_text(text: str) -> str:
+    def _build_ollama_passage_embedding_text(text: str) -> str:
         if text.startswith("passage: "):
             return text
         return f"passage: {text}"
+
+    @staticmethod
+    def _build_ollama_safe_embedding_text(text: str) -> str:
+        normalized = text.replace("\x00", " ")
+        normalized = re.sub(
+            r"[{}\[\]()`'\"=:,;<>|]",
+            " ",
+            normalized,
+        )
+        normalized = re.sub(
+            r"\s+",
+            " ",
+            normalized,
+        ).strip()
+
+        if not normalized:
+            normalized = "empty content"
+
+        if normalized.startswith("passage: "):
+            return normalized
+
+        return f"passage: {normalized}"
 
     async def embed_texts(
         self,
@@ -141,7 +164,7 @@ class AsyncEmbeddingClient:
                         raise
 
                     safe_batch = [
-                        self._build_ollama_safe_embedding_text(text)
+                        self._build_ollama_passage_embedding_text(text)
                         for text in batch
                     ]
                     logger.warning(
@@ -150,7 +173,25 @@ class AsyncEmbeddingClient:
                         start // effective_batch_size + 1,
                         start,
                     )
-                    batch_vectors = await self._request_batch(safe_batch)
+                    try:
+                        batch_vectors = await self._request_batch(safe_batch)
+                    except AsyncCallRetryExhaustedError as retry_exc:
+                        if not self._should_retry_ollama_batch_with_passage(
+                            retry_exc
+                        ):
+                            raise
+
+                        safe_batch = [
+                            self._build_ollama_safe_embedding_text(text)
+                            for text in batch
+                        ]
+                        logger.warning(
+                            "Ollama Embedding 第 %s 批（起始 Chunk=%s）"
+                            "passage 前缀重试仍失败，使用安全文本重试一次",
+                            start // effective_batch_size + 1,
+                            start,
+                        )
+                        batch_vectors = await self._request_batch(safe_batch)
 
                 for converted in batch_vectors:
                     if vector_dimension is None:

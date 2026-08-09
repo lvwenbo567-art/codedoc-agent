@@ -4,10 +4,16 @@ import type {
   BuildIndexResponse,
   HITLAgentResponse,
   HumanReviewDecision,
+  IngestionJobResponse,
+  McpPrompt,
+  McpResource,
+  McpTool,
   ProjectConfig,
   ScanProjectRequest,
   ScanProjectResponse,
   SSELogItem,
+  SkillDefinition,
+  SkillRouteResponse,
   UploadProjectZipResponse,
 } from "./types";
 
@@ -19,7 +25,17 @@ function buildUrl(path: string): string {
 
 async function parseJsonResponse<T>(response: Response): Promise<T> {
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  let data: any = null;
+
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    if (!response.ok) {
+      throw new Error(text || `HTTP ${response.status}`);
+    }
+
+    throw new Error("后端返回了非 JSON 响应。");
+  }
 
   if (!response.ok) {
     const message =
@@ -129,10 +145,144 @@ export async function listBadCases(projectId: number): Promise<unknown> {
   return parseJsonResponse<unknown>(response);
 }
 
+export async function promoteFeedbackToBadCase(
+  feedbackId: number,
+  payload: {
+    case_id: string;
+    name: string;
+    expected_tool_names: string[];
+    forbidden_tool_names: string[];
+    required_answer_terms: string[];
+    accepted_stop_reasons: string[];
+    notes?: string | null;
+  },
+): Promise<unknown> {
+  const response = await fetch(buildUrl(`/agent-quality/feedback/${feedbackId}/bad-case`), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseJsonResponse<unknown>(response);
+}
+
 export async function fetchVersion(): Promise<unknown> {
   const response = await fetch(buildUrl("/version"));
 
   return parseJsonResponse<unknown>(response);
+}
+
+export async function listSkills(): Promise<{
+  success?: boolean;
+  data?: { skills: SkillDefinition[] };
+}> {
+  const response = await fetch(buildUrl("/skills"));
+
+  return parseJsonResponse(response);
+}
+
+export async function routeSkill(query: string): Promise<SkillRouteResponse> {
+  const response = await fetch(buildUrl("/skills/route"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  return parseJsonResponse<SkillRouteResponse>(response);
+}
+
+export async function listMcpTools(): Promise<{
+  success?: boolean;
+  data?: { tools: McpTool[] };
+}> {
+  const response = await fetch(buildUrl("/mcp/tools"));
+
+  return parseJsonResponse(response);
+}
+
+export async function listMcpResources(projectId: number): Promise<{
+  success?: boolean;
+  data?: { resources: McpResource[] };
+}> {
+  const response = await fetch(buildUrl(`/mcp/resources?project_id=${projectId}`));
+
+  return parseJsonResponse(response);
+}
+
+export async function listMcpPrompts(): Promise<{
+  success?: boolean;
+  data?: { prompts: McpPrompt[] };
+}> {
+  const response = await fetch(buildUrl("/mcp/prompts"));
+
+  return parseJsonResponse(response);
+}
+
+export async function callMcpTool(payload: {
+  tool_name: string;
+  arguments: Record<string, unknown>;
+  project_root: string;
+  chunks_path: string;
+  index_path: string;
+  embedding_provider: string;
+  embedding_model: string;
+  embedding_base_url: string;
+  rerank_provider: string;
+  rerank_model: string;
+  rerank_local_files_only: boolean;
+}): Promise<unknown> {
+  const response = await fetch(buildUrl("/mcp/tools/call"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseJsonResponse(response);
+}
+
+export async function createIngestionJob(payload: {
+  project_id: number;
+  project_root: string;
+  embedding_batch_size: number;
+  upsert_batch_size: number;
+}): Promise<IngestionJobResponse> {
+  const response = await fetch(buildUrl("/ingestion/jobs"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseJsonResponse<IngestionJobResponse>(response);
+}
+
+export async function getIngestionJob(jobId: string): Promise<IngestionJobResponse> {
+  const response = await fetch(buildUrl(`/ingestion/jobs/${jobId}`));
+
+  return parseJsonResponse<IngestionJobResponse>(response);
+}
+
+export async function cancelIngestionJob(jobId: string): Promise<IngestionJobResponse> {
+  const response = await fetch(buildUrl(`/ingestion/jobs/${jobId}/cancel`), {
+    method: "POST",
+  });
+
+  return parseJsonResponse<IngestionJobResponse>(response);
+}
+
+export async function retryIngestionJob(jobId: string): Promise<IngestionJobResponse> {
+  const response = await fetch(buildUrl(`/ingestion/jobs/${jobId}/retry`), {
+    method: "POST",
+  });
+
+  return parseJsonResponse<IngestionJobResponse>(response);
 }
 
 export async function scanProject(

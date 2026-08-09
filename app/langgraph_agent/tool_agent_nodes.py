@@ -14,6 +14,7 @@ from context_engineering.token_counter import ApproximateTokenCounter
 from langgraph_agent.tool_agent_dependencies import CodeDocToolAgentDependencies
 from langgraph_agent.tool_agent_state import CodeDocToolAgentState
 from langgraph_agent.tool_call_guard import evaluate_tool_calls
+from langgraph_agent.tool_call_normalizer import normalize_tool_calls
 from security.sensitive_data_redactor import SensitiveDataRedactor
 
 
@@ -26,12 +27,15 @@ CODEDOC_TOOL_AGENT_SYSTEM_PROMPT = """
 你应根据用户问题选择合适工具，不要编造不存在的工具。
 
 工具使用策略：
-1. 明确函数名、类名或方法名的问题，优先使用精确符号定义查询。
+1. 明确函数名、类名或方法名的问题，优先使用 get_symbol_definition。
+   不要只用 search_code 猜测定义位置；如果符号工具找不到，再退回 search_code。
 2. 如果工具结果提供了 source_path、start_line、end_line，且用户需要源码解释，
    应读取对应文件范围后再回答。
 3. 项目目录、模块、入口文件问题，优先查看项目结构。
 4. README、启动、配置、部署和说明类问题，优先检索项目文档。
 5. 代码实现、调用关系、检索流程、RAG 流程问题，优先检索代码。
+   流程类问题不要只基于单个局部函数下结论，应尽量获取 2 个以上相关证据，
+   例如先看项目结构，再检索入口、pipeline、service 或 tool 相关实现。
 6. 工具返回错误时，可以换一种工具或参数继续有限尝试。
 7. 已经拿到足够证据时，应停止调用工具并直接给出最终答案。
 8. 不要重复调用相同工具和相同参数。
@@ -209,7 +213,7 @@ class CodeDocToolAgentNodes:
                 },
             )
 
-        tool_calls = list(last_ai_message.tool_calls or [])
+        tool_calls = normalize_tool_calls(list(last_ai_message.tool_calls or []))
         answer_text = extract_message_text(last_ai_message)
 
         if not tool_calls:
@@ -247,6 +251,11 @@ class CodeDocToolAgentNodes:
         return Command(
             goto="tools",
             update={
+                "messages": [
+                    last_ai_message.model_copy(
+                        update={"tool_calls": tool_calls}
+                    )
+                ],
                 "tool_call_count": (
                     int(state.get("tool_call_count", 0))
                     + len(tool_calls)

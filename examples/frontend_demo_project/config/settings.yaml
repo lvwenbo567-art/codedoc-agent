@@ -1,0 +1,14 @@
+project:
+  name: frontend_demo_project
+  language: python
+  description: Small retrieval demo project for frontend testing.
+
+retrieval:
+  chunk_size: 300
+  chunk_overlap: 50
+  top_k: 3
+  min_score: 1
+
+runtime:
+  enable_cache: true
+  log_level: INFO

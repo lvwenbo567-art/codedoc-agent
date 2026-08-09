@@ -215,3 +215,69 @@ export type UploadProjectZipResponse = {
 };
 
 export type AppView = "setup" | "workspace" | "evaluation" | "settings";
+
+export type SkillDefinition = {
+  skill_name: string;
+  display_name: string;
+  description: string;
+  intent_keywords: string[];
+  example_queries: string[];
+  recommended_tools: string[];
+  output_sections: string[];
+  requires_human_review_tools: string[];
+};
+
+export type SkillRouteResponse = {
+  success?: boolean;
+  data?: {
+    route: {
+      query: string;
+      skill_name: string;
+      display_name: string;
+      confidence: number;
+      matched_keywords: string[];
+      recommended_tools: string[];
+      output_sections: string[];
+      reason: string;
+    };
+    plan: Record<string, unknown>;
+  };
+};
+
+export type McpTool = {
+  name: string;
+  description: string;
+  input_schema: Record<string, unknown>;
+};
+
+export type McpResource = {
+  uri: string;
+  name: string;
+  description: string;
+  mime_type: string;
+};
+
+export type McpPrompt = {
+  name: string;
+  description: string;
+  template: string;
+};
+
+export type IngestionJobResponse = {
+  job_id: string;
+  project_id: number;
+  status: string;
+  stage: string;
+  progress: number;
+  attempt: number;
+  request_data: Record<string, unknown>;
+  result_data: Record<string, unknown>;
+  parent_job_id: string | null;
+  cancel_requested: boolean;
+  created_at: string;
+  updated_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  error_type: string | null;
+  error_message: string | null;
+};

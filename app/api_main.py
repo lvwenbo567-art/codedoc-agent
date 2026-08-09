@@ -81,6 +81,8 @@ from api.vector_store_router import router as vector_store_router
 from api.ingestion_job_router import router as ingestion_job_router
 from api.security_router import router as security_router
 from api.memory_router import router as memory_router
+from api.skill_router import router as skill_router
+from api.mcp_router import router as mcp_router
 
 
 logger = setup_logger()
@@ -104,6 +106,8 @@ app.include_router(vector_store_router)
 app.include_router(ingestion_job_router)
 app.include_router(security_router)
 app.include_router(memory_router)
+app.include_router(skill_router)
+app.include_router(mcp_router)
 
 
 UPLOAD_PROJECT_ROOT = Path("data/uploaded_projects")
@@ -160,6 +164,38 @@ def _safe_extract_zip(
             extracted_count += 1
 
     return extracted_count
+
+
+def _detect_uploaded_project_root(
+    extract_root: Path,
+) -> Path:
+    """
+    如果 zip 包只有一个顶层目录，则把该目录作为实际项目根目录。
+
+    常见 zip 结构是：
+        demo_project/
+            README.md
+            src/
+            tests/
+
+    如果仍把 extract_root 当 project_root，前端传入 tests/test_x.py
+    时会找不到文件，模型还要额外查看目录后再次调用工具。
+    """
+    children = [
+        item
+        for item in extract_root.iterdir()
+        if item.name != "__MACOSX"
+    ]
+
+    if len(children) != 1:
+        return extract_root
+
+    only_child = children[0]
+
+    if only_child.is_dir():
+        return only_child
+
+    return extract_root
 
 
 @app.exception_handler(HTTPException)
@@ -305,6 +341,7 @@ async def upload_project_zip_api(
             zip_path=zip_path,
             extract_root=extract_root,
         )
+        project_root = _detect_uploaded_project_root(extract_root)
     except zipfile.BadZipFile as exc:
         raise HTTPException(
             status_code=400,
@@ -321,7 +358,8 @@ async def upload_project_zip_api(
             "project_name": safe_name,
             "upload_id": upload_id,
             "filename": file.filename,
-            "project_path": str(extract_root),
+            "project_path": str(project_root),
+            "extract_root": str(extract_root),
             "zip_path": str(zip_path),
             "extracted_file_count": extracted_count,
         }

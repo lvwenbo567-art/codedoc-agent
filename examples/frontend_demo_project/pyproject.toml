@@ -1,0 +1,14 @@
+[project]
+name = "frontend-demo-project"
+version = "0.1.0"
+description = "A small demo project for testing CodeDoc Research Agent frontend."
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.codedoc]
+default_top_k = 3
+chunk_size = 300
+chunk_overlap = 50
