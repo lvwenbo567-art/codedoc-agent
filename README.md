@@ -45,16 +45,16 @@ examples/               示例项目
 
 ## 快速启动
 
-如果希望使用 Docker Compose 一次性启动 FastAPI、Qdrant、Redis、Ollama 和前端，请参考 [Docker Compose 部署说明](docs/docker_compose_deployment.md)。
+项目支持两种启动方式：
 
-### 1. 安装 Python 依赖
+- Docker Compose：推荐用于快速体验，启动 FastAPI、前端、Qdrant 和 Redis。
+- 本地启动：适合开发调试，需要本机安装 Python、Node.js 和 Ollama。
 
-```powershell
-cd codedoc-agent
-pip install -r requirements.txt
-```
+> 默认模型服务使用宿主机 Ollama。也就是说，Docker Compose 默认不会拉取体积较大的 `ollama/ollama` 镜像，避免首次启动过慢。
 
-### 2. 准备 Ollama 模型
+### 方式一：Docker Compose 启动（推荐）
+
+先在宿主机启动 Ollama，并拉取模型：
 
 ```powershell
 ollama pull qwen3.5:4b
@@ -62,7 +62,46 @@ ollama pull bge-m3
 ollama list
 ```
 
-### 3. 启动后端
+然后启动后端、前端、Qdrant 和 Redis：
+
+```powershell
+docker compose up --build api frontend qdrant redis
+```
+
+访问地址：
+
+```text
+前端：http://127.0.0.1:5173
+后端 Swagger：http://127.0.0.1:8000/docs
+Qdrant Dashboard：http://127.0.0.1:6333/dashboard
+```
+
+停止服务：
+
+```powershell
+docker compose down
+```
+
+如果希望使用容器内 Ollama，或需要了解 Docker Compose 环境变量、数据卷和健康检查，请参考 [Docker Compose 部署说明](docs/docker_compose_deployment.md)。
+
+### 方式二：本地启动
+
+#### 1. 安装 Python 依赖
+
+```powershell
+cd codedoc-agent
+pip install -r requirements.txt
+```
+
+#### 2. 准备 Ollama 模型
+
+```powershell
+ollama pull qwen3.5:4b
+ollama pull bge-m3
+ollama list
+```
+
+#### 3. 启动后端
 
 ```powershell
 $env:LANGCHAIN_CHAT_PROVIDER="openai_compatible"
@@ -83,7 +122,7 @@ uvicorn api_main:app --reload --app-dir app
 http://127.0.0.1:8000/docs
 ```
 
-### 4. 启动前端
+#### 4. 启动前端
 
 ```powershell
 cd frontend
