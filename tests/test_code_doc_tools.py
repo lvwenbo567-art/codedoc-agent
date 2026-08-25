@@ -92,6 +92,38 @@ def test_project_structure_tool(
     assert "README.md" in paths
 
 
+def test_project_structure_lists_top_level_directories_before_deep_files(
+    tmp_path,
+):
+    """大目录不能挤掉同级的 docs/tests 等主要模块。"""
+    for directory_name in ("app", "docs", "tests"):
+        (tmp_path / directory_name).mkdir()
+
+    for index in range(10):
+        (tmp_path / "app" / f"module_{index}.py").write_text(
+            "pass\n",
+            encoding="utf-8",
+        )
+
+    registry = build_code_doc_tool_registry(
+        project_root=str(tmp_path),
+        chunks_path=str(tmp_path / "chunks.json"),
+        index_path=str(tmp_path / "index.json"),
+    )
+    result = ToolExecutor(registry).execute(
+        tool_name="get_project_structure",
+        arguments={
+            "max_depth": 3,
+            "max_entries": 10,
+            "include_files": True,
+            "include_hidden": False,
+        },
+    )
+
+    paths = [item["path"] for item in result.data["entries"]]
+    assert paths[:3] == ["app", "docs", "tests"]
+
+
 def test_search_code_uses_code_filter(
     tmp_path,
     monkeypatch,

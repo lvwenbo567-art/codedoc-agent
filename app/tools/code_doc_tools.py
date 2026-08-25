@@ -315,66 +315,54 @@ def _build_project_structure(
             in (DEFAULT_IGNORED_DIRECTORIES | path_config.blocked_directories)
         )
 
-    def visit(
-        directory: Path,
-        depth: int,
-    ) -> None:
-        if len(entries) >= max_entries:
-            return
+    # 采用广度优先遍历：目录问答通常先需要顶层模块，而不是某个目录下的
+    # 大量子文件。原先的深度优先遍历会让 app/ 等大目录耗尽 max_entries，
+    # 导致 docs、tests 等同级目录没有机会出现在结果中。
+    pending_directories: list[tuple[Path, int]] = [(root, 1)]
 
+    while pending_directories and len(entries) < max_entries:
+        directory, depth = pending_directories.pop(0)
         if depth > max_depth:
-            return
+            continue
 
-        children = sorted(
-            directory.iterdir(),#获取当前目录下的直接子项
-            key=lambda item: (
-                not item.is_dir(),
-                item.name.lower(),
-            ),
-        )
+        try:
+            children = sorted(
+                directory.iterdir(),
+                key=lambda item: (
+                    not item.is_dir(),
+                    item.name.lower(),
+                ),
+            )
+        except OSError:
+            # Windows 上可能遗留被 pytest 或其他进程占用的目录；目录展示是
+            # 尽力而为的只读能力，跳过不可访问节点不应中断整个 Agent。
+            continue
 
         for child in children:
             if len(entries) >= max_entries:
-                return
+                break
 
-            if should_skip(child):
+            try:
+                if should_skip(child):
+                    continue
+            except OSError:
                 continue
 
             if child.is_file() and not include_files:
                 continue
-            '''
-            root = Path("D:/CodeDoc")
-            child = Path("D:/CodeDoc/src/services/search.py")
-            最终也会变成：
-            src/services/search.py
-            '''
-            relative_path = child.relative_to(
-                root
-            ).as_posix()
 
+            relative_path = child.relative_to(root).as_posix()
             entries.append(
                 {
                     "path": relative_path,
                     "name": child.name,
-                    "type": (
-                        "directory"
-                        if child.is_dir()
-                        else "file"
-                    ),
+                    "type": "directory" if child.is_dir() else "file",
                     "depth": depth,
                 }
             )
 
-            if child.is_dir():
-                visit(
-                    directory=child,
-                    depth=depth + 1,
-                )
-
-    visit(
-        directory=root,
-        depth=1,
-    )
+            if child.is_dir() and depth < max_depth:
+                pending_directories.append((child, depth + 1))
 
     return {
         "project_root": str(root),

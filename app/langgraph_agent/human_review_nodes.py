@@ -18,6 +18,7 @@ from langgraph_agent.tool_agent_nodes import (
 from langgraph_agent.tool_agent_state import CodeDocToolAgentState
 from langgraph_agent.tool_call_guard import evaluate_tool_calls
 from langgraph_agent.tool_call_normalizer import normalize_tool_calls
+from security.agent_request_policy import AgentRequestSecurityPolicy
 from security.tool_security_policy import ToolSecurityPolicy
 
 
@@ -99,6 +100,19 @@ class HumanReviewToolAgentNodes(CodeDocToolAgentNodes):
 
         tool_calls = normalize_tool_calls(list(last_ai_message.tool_calls or []))
 
+        request_security_result = AgentRequestSecurityPolicy().evaluate(
+            str(state.get("query") or "")
+        )
+        if not request_security_result.allowed:
+            return Command(
+                goto="limit_answer",
+                update={
+                    "stop_reason": request_security_result.stop_reason,
+                    "error_message": request_security_result.error_message,
+                    "execution_steps": ["controller_request_blocked"],
+                },
+            )
+
         if not tool_calls:
             answer_text = str(getattr(last_ai_message, "content", "") or "").strip()
 
@@ -133,6 +147,17 @@ class HumanReviewToolAgentNodes(CodeDocToolAgentNodes):
                 },
             )
 
+        security_result = ToolSecurityPolicy().validate_calls(tool_calls)
+        if not security_result.allowed:
+            return Command(
+                goto="limit_answer",
+                update={
+                    "stop_reason": "invalid_tool_call",
+                    "error_message": security_result.error_message,
+                    "execution_steps": ["controller_security_blocked"],
+                },
+            )
+
         if self._requires_review(tool_calls):
             return Command(
                 goto="human_review",
@@ -142,17 +167,6 @@ class HumanReviewToolAgentNodes(CodeDocToolAgentNodes):
                     "approval_status": "pending",
                     "stop_reason": "interrupted",
                     "execution_steps": ["controller_review"],
-                },
-            )
-
-        security_result = ToolSecurityPolicy().validate_calls(tool_calls)
-        if not security_result.allowed:
-            return Command(
-                goto="limit_answer",
-                update={
-                    "stop_reason": "invalid_tool_call",
-                    "error_message": security_result.error_message,
-                    "execution_steps": ["controller_security_blocked"],
                 },
             )
 

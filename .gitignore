@@ -48,9 +48,12 @@ qdrant_storage/
 # Local generated indexes / chunks
 outputs/*
 !outputs/experiments/
-outputs/experiments/*_vector_index*.json
-outputs/experiments/logs/
-!outputs/experiments/*report*.json
+outputs/experiments/*
+# 仅保留 README 中引用的最终实验报告；中间轮次仍保存在本地，避免污染仓库。
+!outputs/experiments/retrieval_experiment_report_bge_m3_100.json
+!outputs/experiments/chunk_experiment_report_latest.json
+!outputs/experiments/agent_eval_report_qwen35_50_round3_after_key_badcase_fix.json
+!outputs/experiments/agent_bad_case_regression_report_qwen35_round8.json
 !outputs/README.md
 
 # Local demo archives
