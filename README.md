@@ -52,6 +52,18 @@ flowchart LR
 | `这个项目有哪些主要模块？` | 项目结构查询 | 展示目录与模块概览。 |
 | `运行 tests/test_project_test_tools.py` | 测试工具 + HITL | 前端展示工具参数，用户 approve/reject/edit 后再继续。 |
 
+### 前端工作台
+
+<p align="center">
+  <img src="docs/assets/workspace-code-answer.png" alt="CodeDoc 代码问答工作台，展示符号定位、源码回答与执行 Trace" width="900" />
+</p>
+
+### Human-in-the-loop 审核
+
+<p align="center">
+  <img src="docs/assets/hitl-tool-approval.png" alt="CodeDoc 对测试执行工具的 approve、reject、edit 人工审核界面" width="900" />
+</p>
+
 详细操作见 [Demo 指南](docs/demo.md)，指标和数据集说明见 [评测说明](docs/retrieval_experiments.md)。
 
 ## 核心能力
